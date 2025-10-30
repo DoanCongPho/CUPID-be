@@ -15,10 +15,10 @@ Django settings for config project.
 ...
 """
 
+from dotenv import load_dotenv
+from pathlib import Path
 import os
 import sys
-from pathlib import Path
-from dotenv import load_dotenv
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
