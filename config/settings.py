@@ -10,20 +10,39 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+"""
+Django settings for config project.
+...
+"""
+
 from pathlib import Path
+import os
+from dotenv import load_dotenv  # <-- THÊM DÒNG NÀY
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# --- THÊM DÒNG NÀY ĐỂ ĐỌC FILE .env ---
+# Nó sẽ tìm file .env ở thư mục gốc (cùng cấp với manage.py)
+load_dotenv(BASE_DIR / '.env')
+
+# Quick-start development settings...
+# ...
+
+# XÓA CÁC BIẾN BỊ LẶP Ở ĐẦU FILE, CHỈ GIỮ LẠI CỤM NÀY
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret')
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 't')
+
+ALLOWED_HOSTS = []
+# ... phần còn lại của file ...
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-itf(nhcmk&egmvraezvztw1(3btu-tmau@98mm4i&p8d3db=-3'
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# This code is correct. It reads from the environment.
+SECRET_KEY = os.environ.get('SECRET_KEY', 'fallback-secret')
+DEBUG = os.environ.get('DEBUG', 'False').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = []
 
@@ -72,13 +91,47 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+import os
+from pathlib import Path
+
+# ... (BASE_DIR của bạn ở trên này) ...
+
+# Kiểm tra xem biến 'DB_HOST' có được Docker cung cấp hay không
+# os.environ.get('DB_HOST') sẽ trả về 'db' (trong Docker) hoặc None (ở local)
+IS_DOCKER = True
+
+if IS_DOCKER:
+    # --- CẤU HÌNH CHO DOCKER (MySQL) ---
+    print("Running with Docker (MySQL) database.") # Thêm dòng này để check log
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.environ.get('DB_DATABASE'),
+            'USER': os.environ.get('DB_USER'),
+            'PASSWORD': os.environ.get('DB_PASSWORD'),
+            'HOST': os.environ.get('DB_HOST'), # Sẽ là 'db'
+            'PORT': os.environ.get('DB_PORT'),
+        }
+    }
+else:
+    print("Running with Local (SQLite) database.")
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
+
+
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis://redis:6379/1",
+        "OPTIONS": {
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
