@@ -41,7 +41,7 @@ staticfiles/
 # ----------------------------------------------------------------
 # Environment variables file
 .env
-.env.*
+
 
 # Local/secret settings (a common pattern)
 settings_local.py
