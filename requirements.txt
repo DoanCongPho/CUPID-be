@@ -4,3 +4,4 @@ python-jose[cryptography]
 requests
 cachetools
 psycopg2-binary
+python-dotenv

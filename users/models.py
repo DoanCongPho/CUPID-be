@@ -4,10 +4,6 @@ from django.conf import settings
 from django.utils.translation import gettext_lazy as _
 
 class CustomUser(AbstractUser):
-    class Meta:
-        verbose_name = _("user")
-        verbose_name_plural = _("users")
-
     def __str__(self):
         return self.email if self.email else self.username
 
@@ -17,9 +13,19 @@ class UserProfile(models.Model):
     bio = models.TextField(blank=True)
     avatar_url = models.URLField(blank=True)
     indirect_teaser = models.CharField(max_length=255, blank=True)
-    # add more fields later: location, prefs, xp, is_verified, etc.
+
+    external_id = models.CharField(max_length=255, blank=True, db_index=True)
+    is_service_account = models.BooleanField(default=False, db_index=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = _("user profile")
+        verbose_name_plural = _("user profiles")
+        indexes = [
+            models.Index(fields=["external_id"]),
+        ]
 
     def __str__(self):
         return f"Profile of {self.user.username}"
