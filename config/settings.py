@@ -132,11 +132,12 @@ AUTH0_AUDIENCE = os.getenv("AUTH0_AUDIENCE")
 
 # REST Framework configuration: use Auth0 JWT auth first, then Session (so admin/browser still works)
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": (
-        "users.authentication.Auth0JSONWebTokenAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
-    ),
-    "DEFAULT_PERMISSION_CLASSES": (
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "users.token_auth.ExpiringTokenAuthentication",                      
+        "users.authentication.Auth0JSONWebTokenAuthentication",              
+        "rest_framework.authentication.SessionAuthentication",              
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
-    ),
+    ],
 }
