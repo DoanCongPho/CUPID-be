@@ -33,7 +33,9 @@ RUN apt-get update && apt-get install -y \
 WORKDIR /code
 
 COPY --from=builder /code /code
-
 COPY . .
 
 EXPOSE 8000
+
+# **Chạy migrate và start server trên Railway**
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:${PORT:-8000}"]
