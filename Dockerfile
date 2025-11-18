@@ -1,5 +1,4 @@
-# ---- Build stage ----
-FROM python:3.13-slim AS builder
+FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
@@ -11,31 +10,13 @@ RUN apt-get update && apt-get install -y \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
-RUN pip install poetry
-
 WORKDIR /code
 
 COPY poetry.lock pyproject.toml ./
-RUN poetry config virtualenvs.create false && poetry install --no-root
+RUN pip install poetry && poetry config virtualenvs.create false && poetry install --no-root
 
-# ---- Final stage ----
-FROM python:3.13-slim
-
-ENV PYTHONDONTWRITEBYTECODE=1
-ENV PYTHONUNBUFFERED=1
-
-RUN apt-get update && apt-get install -y \
-    libpq-dev \
-    python3-dev \
-    --no-install-recommends && \
-    rm -rf /var/lib/apt/lists/*
-
-WORKDIR /code
-
-COPY --from=builder /code /code
 COPY . .
 
 EXPOSE 8000
 
-# **Chạy migrate và start server trên Railway**
 CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:${PORT:-8000}"]
