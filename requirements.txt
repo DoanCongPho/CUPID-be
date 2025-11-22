@@ -11,7 +11,7 @@ django-redis==6.0.0
 djangorestframework==3.16.1
 ecdsa==0.19.1
 idna==3.11
-isort==7.0.0
+isort==5.13.2
 mypy_extensions==1.1.0
 packaging==25.0
 pathspec==0.12.1
