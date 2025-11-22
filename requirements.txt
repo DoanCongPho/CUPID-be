@@ -5,7 +5,6 @@ cachetools==6.2.1
 certifi==2025.10.5
 charset-normalizer==3.4.4
 click==8.3.0
--e git+https://github.com/DoanCongPho/CUPID-be.git@e8a3ad2639ac0d65fcbd58c9365cc85205863214#egg=config
 dj-database-url==3.0.1
 Django==5.2.7
 django-redis==6.0.0
