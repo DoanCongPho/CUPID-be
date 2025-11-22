@@ -1,5 +1,10 @@
 {
     "version": 2,
+    "functions": {
+        "config/wsgi.py": {
+            "runtime": "python3.11"
+        }
+    },
     "routes": [
         {
             "src": "/static/(.*)",
