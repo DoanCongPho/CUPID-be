@@ -2,7 +2,7 @@
     "version": 2,
     "functions": {
         "config/wsgi.py": {
-            "runtime": "python3.11.3"
+           "runtime": "now-python@1.0.0"
         }
     },
     "routes": [
