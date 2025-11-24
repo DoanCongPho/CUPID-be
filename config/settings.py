@@ -4,8 +4,7 @@ import os
 import sys
 from pathlib import Path
 from dotenv import load_dotenv
-
-from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -84,8 +83,6 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Kiểm tra xem biến 'DB_HOST' có được Docker cung cấp hay không
 # os.environ.get('DB_HOST') sẽ trả về 'db' (trong Docker) hoặc None (ở local)
-IS_DOCKER = True
-
 IS_TESTING = "test" in sys.argv
 
 if IS_TESTING:
@@ -96,37 +93,22 @@ if IS_TESTING:
             "NAME": BASE_DIR / "test_db.sqlite3",
         }
     }
-elif IS_DOCKER:
-    print("Running with Docker (MySQL) database.")
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.environ.get("DB_DATABASE", "cupid_db"),
-            "USER": os.environ.get("DB_USER", "root"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", "password"),
-            "HOST": os.environ.get("DB_HOST", "db"),
-            "PORT": os.environ.get("DB_PORT", "3306"),
-        }
-    }
 else:
-    print("Running locally (SQLite).")
+    print("Using dj-database-url for DATABASES config.")
     DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-        }
+        "default": dj_database_url.config(default=os.environ.get("DATABASE_URL"))
     }
 
 
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-    }
-}
+# CACHES = {
+#     "default": {
+#         "BACKEND": "django_redis.cache.RedisCache",
+#         "LOCATION": os.environ.get("REDIS_URL", "redis://redis:6379/1"),
+#         "OPTIONS": {
+#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
+#         },
+#     }
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
@@ -171,9 +153,9 @@ AUTH0_AUDIENCE = os.getenv("AUTH0_AUDIENCE")
 # REST Framework configuration: use Auth0 JWT auth first, then Session (so admin/browser still works)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "users.token_auth.ExpiringTokenAuthentication",                      
-        "users.authentication.Auth0JSONWebTokenAuthentication",              
-        "rest_framework.authentication.SessionAuthentication",              
+        "users.token_auth.ExpiringTokenAuthentication",
+        "users.authentication.Auth0JSONWebTokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
