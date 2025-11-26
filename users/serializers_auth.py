@@ -13,6 +13,13 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError("Email đã được sử dụng.")
         return value
 
+    def validate_username(self, value):
+        if User.objects.filter(username__iexact=value).exists():
+            raise serializers.ValidationError("Username đã được sử dụng.")
+        return value
+
+
+
 class LoginSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True)
