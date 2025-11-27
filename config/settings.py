@@ -84,7 +84,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # Kiểm tra xem biến 'DB_HOST' có được Docker cung cấp hay không
 # os.environ.get('DB_HOST') sẽ trả về 'db' (trong Docker) hoặc None (ở local)
-IS_DOCKER = True
+IS_DOCKER = False
 
 IS_TESTING = "test" in sys.argv
 
