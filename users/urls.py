@@ -1,5 +1,6 @@
 from django.urls import path
-from .views import ProfileView,RegisterView,LoginView,LogoutView,TokenListView,TodoListCreateView,TodoDetailView
+from .views import ProfileView, TodoListCreateView, TodoDetailView
+from .views_auth import RegisterView, LoginView, LogoutView, TokenListView
 
 urlpatterns = [
     path("profile/", ProfileView.as_view(), name="profile"),

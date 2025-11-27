@@ -20,6 +20,7 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="profile", on_delete=models.CASCADE)
     bio = models.TextField(blank=True)
     avatar_url = models.URLField(blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
     indirect_teaser = models.CharField(max_length=255, blank=True)
     external_id = models.CharField(max_length=255, blank=True, db_index=True)
     is_service_account = models.BooleanField(default=False, db_index=True)
