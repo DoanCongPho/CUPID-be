@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
 from .serializers_auth import RegisterSerializer, LoginSerializer
-from .models import ExpiringToken
+from .models import UserProfile, ExpiringToken
 
 User = get_user_model()
 
@@ -14,22 +14,23 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         # Extract validated data
         name = serializer.validated_data["name"]
         email = serializer.validated_data["email"]
         password = serializer.validated_data["password"]
         date_of_birth = serializer.validated_data["dateofBirth"]
         avatar_url = serializer.validated_data.get("avatar_url", "")
-        
+
+
         # Parse name into first_name and last_name
         name_parts = name.strip().split(maxsplit=1)
         first_name = name_parts[0]
         last_name = name_parts[1] if len(name_parts) > 1 else ""
-        
+
         # Generate username from email
         username = email.split("@")[0]
-        
+
         # Create user with name
         user = User.objects.create_user(
             username=username,
@@ -38,17 +39,17 @@ class RegisterView(APIView):
             first_name=first_name,
             last_name=last_name
         )
-        
+
         # Update profile with additional fields
         # Profile is auto-created via signals, but we need to update it
-        profile = user.profile
+        profile, created = UserProfile.objects.get_or_create(user=user)
         profile.date_of_birth = date_of_birth
         profile.avatar_url = avatar_url
         profile.save(update_fields=["date_of_birth", "avatar_url", "updated_at"])
-        
+
         # Generate token
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="initial")
-        
+
         resp = {
             "token": token_plain,
             "expires_at": token_obj.expires_at,
@@ -82,9 +83,11 @@ class LoginView(APIView):
             return Response({"detail": "Email hoặc mật khẩu không đúng."}, status=status.HTTP_400_BAD_REQUEST)
         if not user.is_active:
             return Response({"detail": "Tài khoản bị khóa."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        profile, created = UserProfile.objects.get_or_create(user=user)
 
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="login")
-        
+
         resp = {
             "token": token_plain,
             "expires_at": token_obj.expires_at,
@@ -92,8 +95,8 @@ class LoginView(APIView):
                 "id": user.id,
                 "name": user.get_full_name(),
                 "email": user.email,
-                "dateofBirth": user.profile.date_of_birth.isoformat() if user.profile.date_of_birth else None,
-                "avatar_url": user.profile.avatar_url
+                "dateofBirth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+                "avatar_url": profile.avatar_url
             }
         }
         return Response(resp, status=status.HTTP_200_OK)
@@ -107,7 +110,7 @@ class LogoutView(APIView):
         if hasattr(auth, "revoke"):
             auth.revoke()
             return Response({"detail": "Token revoked"}, status=status.HTTP_200_OK)
-        
+
         header = request.META.get("HTTP_AUTHORIZATION", "")
         parts = header.split()
         if len(parts) == 2:
