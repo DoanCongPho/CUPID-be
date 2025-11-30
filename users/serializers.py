@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserProfile,Todo
+from .models import UserProfile, Todo
 from django.contrib.auth import get_user_model, authenticate
 
 User = get_user_model()

@@ -3,7 +3,6 @@ from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-
 from .serializers_auth import RegisterSerializer, LoginSerializer
 from .models import ExpiringToken
 
@@ -109,7 +108,6 @@ class LogoutView(APIView):
             auth.revoke()
             return Response({"detail": "Token revoked"}, status=status.HTTP_200_OK)
         
-        from .models import ExpiringToken
         header = request.META.get("HTTP_AUTHORIZATION", "")
         parts = header.split()
         if len(parts) == 2:

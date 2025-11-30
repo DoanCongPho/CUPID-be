@@ -1,10 +1,10 @@
 import requests
 from cachetools import TTLCache, cached
 from jose import jwt, JWTError
-
 from django.conf import settings
 from rest_framework import authentication, exceptions
 from django.contrib.auth import get_user_model
+from users.models import UserProfile
 
 User = get_user_model()
 
@@ -42,7 +42,7 @@ class Auth0JSONWebTokenAuthentication(authentication.BaseAuthentication):
 
         if len(auth_header) == 1:
             raise exceptions.AuthenticationFailed('Invalid token header. No credentials provided.')
-        elif len(auth_header) > 2:
+        if len(auth_header) > 2:
             raise exceptions.AuthenticationFailed('Invalid token header. Token string should not contain spaces.')
 
         token = auth_header[1].decode('utf-8')
@@ -52,72 +52,45 @@ class Auth0JSONWebTokenAuthentication(authentication.BaseAuthentication):
         except Exception as exc:
             raise exceptions.AuthenticationFailed(f"Token validation error: {str(exc)}")
 
-        # Try to get email from token; if not present, attempt userinfo
-        email = payload.get("email")
-        sub = payload.get("sub")
-
-        if not email:
+        # Combine all claims extraction into single dict
+        claims = {
+            'email': payload.get("email"),
+            'sub': payload.get("sub"),
+            'name': payload.get("name"),
+        }
+    
+        # Fallback to userinfo if email missing
+        if not claims['email']:
             info = fetch_userinfo(token)
-            email = info.get("email") or email
-            name = info.get("name")
-        else:
-            name = payload.get("name")
+            claims.update({
+                'email': info.get("email") or claims['email'],
+                'name': info.get("name") or claims['name']
+            })
 
-        # 1) Try match by email
-        user = None
-        if email:
+        # Merged user lookup: email → external_id → create
+        user = self._get_or_create_user(claims)
+    
+        # Update user name if available and blank
+        if claims['name'] and not user.get_full_name():
             try:
-                user = User.objects.filter(email__iexact=email).first()
-            except Exception:
-                user = None
-
-        # 2) If not found by email, try match by external_id stored in profile
-        if not user and sub:
-            user = User.objects.filter(profile__external_id=sub).first()
-
-        # 3) If still not found, create a new user
-        if not user:
-            username = None
-            if email:
-                username = email.split("@")[0]
-                user, created = User.objects.get_or_create(email=email, defaults={"username": username})
-            else:
-                username = (sub or "auth0user").replace("|", "_")
-                user, created = User.objects.get_or_create(username=username, defaults={"email": ""})
-
-        # 4) Update user name if available and blank
-        if name and (not user.get_full_name()):
-            try:
-                parts = name.split()
+                parts = claims['name'].split()
                 user.first_name = parts[0]
                 user.last_name = " ".join(parts[1:]) if len(parts) > 1 else ""
                 user.save(update_fields=["first_name", "last_name"])
             except Exception:
                 pass
 
-        # 5) Ensure profile exists and update external_id / is_service_account
-        profile = None
-        try:
-            profile = user.profile
-        except Exception:
-            from .models import UserProfile
-            profile, _ = UserProfile.objects.get_or_create(user=user)
-
+        # Ensure profile exists and update external_id / is_service_account
+        profile, _ = UserProfile.objects.get_or_create(user=user)
+    
         updated = False
+        sub = claims['sub']
         if sub and profile.external_id != sub:
             profile.external_id = sub
             updated = True
 
-        # Mark as service account for common Auth0 client patterns:
-        # - legacy: startswith "client|"
-        # - new pattern: endswith "@clients" (as seen in your tokens)
-        # You can extend this test if you have other patterns.
-        is_service = False
-        if sub:
-            s = str(sub)
-            if s.startswith("client|") or s.endswith("@clients"):
-                is_service = True
-
+        # Mark as service account
+        is_service = bool(sub and (str(sub).startswith("client|") or str(sub).endswith("@clients")))
         if is_service and not profile.is_service_account:
             profile.is_service_account = True
             updated = True
@@ -126,6 +99,33 @@ class Auth0JSONWebTokenAuthentication(authentication.BaseAuthentication):
             profile.save(update_fields=["external_id", "is_service_account", "updated_at"])
 
         return (user, token)
+
+    def _get_or_create_user(self, claims):
+        """Merged lookup: email → external_id → create user"""
+        email = claims['email']
+        sub = claims['sub']
+    
+        # 1) Try email lookup
+        if email:
+            user = User.objects.filter(email__iexact=email).first()
+            if user:
+                return user
+    
+        # 2) Try external_id lookup
+        if sub:
+            user = User.objects.filter(profile__external_id=sub).first()
+            if user:
+                return user
+    
+        # 3) Create new user
+        if email:
+            username = email.split("@")[0]
+            user, _ = User.objects.get_or_create(email=email, defaults={"username": username})
+        else:
+            username = (sub or "auth0user").replace("|", "_")
+            user, _ = User.objects.get_or_create(username=username, defaults={"email": ""})
+    
+        return user
 
     def _validate_token(self, token: str) -> dict:
         jwks = get_jwks()

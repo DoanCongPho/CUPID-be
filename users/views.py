@@ -1,9 +1,11 @@
-from rest_framework import permissions,status,generics, permissions
+from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 from .serializers import UserProfileSerializer, TodoSerializer
 from .models import Todo
+
+User = get_user_model()
 
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -20,9 +22,7 @@ class ProfileView(APIView):
             serializer.save()
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
-User = get_user_model()
-    
+
 class TodoListCreateView(generics.ListCreateAPIView):
     serializer_class = TodoSerializer
     permission_classes = [permissions.IsAuthenticated]
