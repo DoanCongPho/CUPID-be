@@ -16,37 +16,52 @@ class RegisterView(APIView):
         serializer.is_valid(raise_exception=True)
 
         # Extract validated data
-        name = serializer.validated_data["name"]
-        email = serializer.validated_data["email"]
-        password = serializer.validated_data["password"]
-        date_of_birth = serializer.validated_data["dateofBirth"]
-        profile_photo_url = serializer.validated_data.get("profile_photo_url", "")
+        validated_data = serializer.validated_data
+        
+        # User model fields
+        email = validated_data.get("email", "").strip()
+        phone_number = validated_data.get("phone_number", "").strip()
+        password = validated_data["password"]
+        provider = validated_data.get("provider", "email")
+        provider_id = validated_data.get("provider_id", "")
+        
+        # UserProfile model fields
+        full_name = validated_data.get("full_name", "").strip()
+        nickname = validated_data.get("nickname", "").strip()
+        date_of_birth = validated_data.get("date_of_birth")
+        teaser_description = validated_data.get("teaser_description", "").strip()
+        profile_photo_url = validated_data.get("profile_photo_url", "").strip()
+        verification_video_url = validated_data.get("verification_video_url", "").strip()
+        home_latitude = validated_data.get("home_latitude")
+        home_longitude = validated_data.get("home_longitude")
 
+        # Generate username from email or phone_number
+        if email:
+            username = email.split("@")[0]
+        else:
+            username = phone_number.replace("+", "").replace("-", "").replace(" ", "")
 
-        # Parse name into first_name and last_name
-        name_parts = name.strip().split(maxsplit=1)
-        first_name = name_parts[0]
-        last_name = name_parts[1] if len(name_parts) > 1 else ""
-
-        # Generate username from email
-        username = email.split("@")[0]
-
-        # Create user with name
+        # Create user
         user = User.objects.create_user(
             username=username,
-            email=email,
+            email=email or "",
+            phone_number=phone_number or None,
             password=password,
-            first_name=first_name,
-            last_name=last_name
+            provider=provider,
+            provider_id=provider_id
         )
 
-        # Update profile with additional fields
-        # Profile is auto-created via signals, but we need to update it
+        # Create or update profile with all provided information
         profile, created = UserProfile.objects.get_or_create(user=user)
-        profile.full_name = name
+        profile.full_name = full_name
+        profile.nickname = nickname
         profile.date_of_birth = date_of_birth
+        profile.teaser_description = teaser_description
         profile.profile_photo_url = profile_photo_url
-        profile.save(update_fields=["full_name", "date_of_birth", "profile_photo_url", "updated_at"])
+        profile.verification_video_url = verification_video_url
+        profile.home_latitude = home_latitude
+        profile.home_longitude = home_longitude
+        profile.save()
 
         # Generate token
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="initial")
@@ -56,10 +71,15 @@ class RegisterView(APIView):
             "expires_at": token_obj.expires_at,
             "user": {
                 "id": user.id,
-                "name": profile.full_name,
                 "email": user.email,
-                "dateofBirth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
-                "profile_photo_url": profile.profile_photo_url
+                "phone_number": user.phone_number,
+                "full_name": profile.full_name,
+                "nickname": profile.nickname,
+                "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+                "profile_photo_url": profile.profile_photo_url,
+                "verification_video_url": profile.verification_video_url,
+                "home_latitude": profile.home_latitude,
+                "home_longitude": profile.home_longitude,
             }
         }
         return Response(resp, status=status.HTTP_201_CREATED)
@@ -72,19 +92,7 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        email = serializer.validated_data["email"]
-        password = serializer.validated_data["password"]
-        user = None
-        try:
-            user = User.objects.get(email__iexact=email)
-        except User.DoesNotExist:
-            return Response({"detail": "Email hoặc mật khẩu không đúng."}, status=status.HTTP_400_BAD_REQUEST)
-
-        if not user.check_password(password):
-            return Response({"detail": "Email hoặc mật khẩu không đúng."}, status=status.HTTP_400_BAD_REQUEST)
-        if not user.is_active:
-            return Response({"detail": "Tài khoản bị khóa."}, status=status.HTTP_400_BAD_REQUEST)
-        
+        user = serializer.validated_data["user"]
         profile, created = UserProfile.objects.get_or_create(user=user)
 
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="login")
@@ -94,10 +102,18 @@ class LoginView(APIView):
             "expires_at": token_obj.expires_at,
             "user": {
                 "id": user.id,
-                "name": profile.full_name or user.get_full_name(),
                 "email": user.email,
-                "dateofBirth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
-                "profile_photo_url": profile.profile_photo_url
+                "phone_number": user.phone_number,
+                "provider": user.provider,
+                "full_name": profile.full_name,
+                "nickname": profile.nickname,
+                "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+                "profile_photo_url": profile.profile_photo_url,
+                "verification_video_url": profile.verification_video_url,
+                "is_verified": profile.is_verified,
+                "total_xp": profile.total_xp,
+                "home_latitude": profile.home_latitude,
+                "home_longitude": profile.home_longitude,
             }
         }
         return Response(resp, status=status.HTTP_200_OK)

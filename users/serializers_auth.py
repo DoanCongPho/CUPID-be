@@ -5,24 +5,57 @@ from datetime import datetime
 User = get_user_model()
 
 class RegisterSerializer(serializers.Serializer):
-    name = serializers.CharField(max_length=255)
-    email = serializers.EmailField()
+    # User model fields (required: email or phone_number, password)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
     password = serializers.CharField(write_only=True, min_length=8)
-    dateofBirth = serializers.CharField()  # Accept as string, will parse to date
-    profile_photo_url = serializers.URLField(allow_blank=True, required=False)
+    provider = serializers.CharField(max_length=50, required=False, allow_blank=True, default="email")
+    provider_id = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    
+    # UserProfile model fields (optional)
+    full_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    nickname = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    date_of_birth = serializers.CharField(required=False, allow_blank=True)
+    teaser_description = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    profile_photo_url = serializers.URLField(required=False, allow_blank=True)
+    verification_video_url = serializers.URLField(required=False, allow_blank=True)
+    home_latitude = serializers.FloatField(required=False, allow_null=True)
+    home_longitude = serializers.FloatField(required=False, allow_null=True)
+
+    def validate(self, data):
+        """Validate that either email or phone_number is provided"""
+        email = data.get("email", "").strip()
+        phone_number = data.get("phone_number", "").strip()
+        
+        if not email and not phone_number:
+            raise serializers.ValidationError("Email hoặc phone_number là bắt buộc.")
+        
+        return data
 
     def validate_email(self, value):
-        if User.objects.filter(email__iexact=value).exists():
-            raise serializers.ValidationError("Email đã được sử dụng.")
+        if value:
+            value = value.strip()
+            if User.objects.filter(email__iexact=value).exists():
+                raise serializers.ValidationError("Email đã được sử dụng.")
         return value
 
-    def validate_dateofBirth(self, value):
+    def validate_phone_number(self, value):
+        if value:
+            value = value.strip()
+            if User.objects.filter(phone_number=value).exists():
+                raise serializers.ValidationError("Số điện thoại đã được sử dụng.")
+        return value
+
+    def validate_date_of_birth(self, value):
         """
         Validate and parse date string. Accepts formats like:
         - "YYYY-MM-DD" (2000-01-15)
         - "DD/MM/YYYY" (15/01/2000)
         - "MM/DD/YYYY" (01/15/2000)
         """
+        if not value:
+            return None
+            
         date_formats = [
             "%Y-%m-%d",      # 2000-01-15
             "%d/%m/%Y",      # 15/01/2000
@@ -50,31 +83,67 @@ class RegisterSerializer(serializers.Serializer):
         )
 
     def validate_profile_photo_url(self, value):
-        """
-        Validate profile picture URL
-        """
+        """Validate profile picture URL"""
         if not value:
             return ""
         
-        # URLField already validates it's a proper URL
-        # Just ensure it's http/https
         if not value.startswith(('http://', 'https://')):
             raise serializers.ValidationError("Profile picture must be a valid HTTP/HTTPS URL")
         
         return value
 
+    def validate_verification_video_url(self, value):
+        """Validate verification video URL"""
+        if not value:
+            return ""
+        
+        if not value.startswith(('http://', 'https://')):
+            raise serializers.ValidationError("Verification video must be a valid HTTP/HTTPS URL")
+        
+        return value
+
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    email = serializers.EmailField(required=False, allow_blank=True)
+    phone_number = serializers.CharField(max_length=20, required=False, allow_blank=True)
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
         from django.contrib.auth import authenticate
-        user = authenticate(email=data.get("email"), password=data.get("password"))
-        if user is None:
-            raise serializers.ValidationError("Email hoặc mật khẩu không đúng.")
+        
+        email = data.get("email", "").strip()
+        phone_number = data.get("phone_number", "").strip()
+        password = data.get("password")
+        
+        # Validate that either email or phone_number is provided
+        if not email and not phone_number:
+            raise serializers.ValidationError("Email hoặc phone_number là bắt buộc.")
+        
+        # Try to authenticate with email first
+        user = None
+        if email:
+            try:
+                user = User.objects.get(email__iexact=email)
+                if not user.check_password(password):
+                    raise serializers.ValidationError("Email hoặc mật khẩu không đúng.")
+            except User.DoesNotExist:
+                pass
+        
+        # If not found with email, try phone_number
+        if not user and phone_number:
+            try:
+                user = User.objects.get(phone_number=phone_number)
+                if not user.check_password(password):
+                    raise serializers.ValidationError("Số điện thoại hoặc mật khẩu không đúng.")
+            except User.DoesNotExist:
+                pass
+        
+        if not user:
+            raise serializers.ValidationError("Email/Số điện thoại hoặc mật khẩu không đúng.")
+        
         if not user.is_active:
             raise serializers.ValidationError("Tài khoản đã bị vô hiệu hóa.")
+        
         data["user"] = user
         return data
 
