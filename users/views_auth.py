@@ -1,12 +1,10 @@
-from django.utils import timezone
 from django.contrib.auth import get_user_model
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-
-from .serializers_auth import RegisterSerializer, LoginSerializer, TokenResponseSerializer
-from .models import ExpiringToken
+from .serializers_auth import RegisterSerializer, LoginSerializer
+from .models import UserProfile, ExpiringToken
 
 User = get_user_model()
 
@@ -16,15 +14,54 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        # Extract validated data
+        name = serializer.validated_data["name"]
         email = serializer.validated_data["email"]
         password = serializer.validated_data["password"]
-        username = serializer.validated_data.get("username") or email.split("@")[0]
+        date_of_birth = serializer.validated_data["dateofBirth"]
+        avatar_url = serializer.validated_data.get("avatar_url", "")
 
-        user = User.objects.create_user(username=username, email=email, password=password)
-        # Optionally auto-create profile via signals (if available)
+
+        # Parse name into first_name and last_name
+        name_parts = name.strip().split(maxsplit=1)
+        first_name = name_parts[0]
+        last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+        # Generate username from email
+        username = email.split("@")[0]
+
+        # Create user with name
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name
+        )
+
+        # Update profile with additional fields
+        # Profile is auto-created via signals, but we need to update it
+        profile, created = UserProfile.objects.get_or_create(user=user)
+        profile.date_of_birth = date_of_birth
+        profile.avatar_url = avatar_url
+        profile.save(update_fields=["date_of_birth", "avatar_url", "updated_at"])
+
+        # Generate token
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="initial")
-        resp = {"token": token_plain, "expires_at": token_obj.expires_at}
-        return Response(TokenResponseSerializer(resp).data, status=status.HTTP_201_CREATED)
+
+        resp = {
+            "token": token_plain,
+            "expires_at": token_obj.expires_at,
+            "user": {
+                "id": user.id,
+                "name": user.get_full_name(),
+                "email": user.email,
+                "dateofBirth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+                "avatar_url": profile.avatar_url
+            }
+        }
+        return Response(resp, status=status.HTTP_201_CREATED)
 
 
 class LoginView(APIView):
@@ -34,7 +71,6 @@ class LoginView(APIView):
         serializer = LoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        # Instead of authenticate(), do manual to support email-as-username patterns robustly
         email = serializer.validated_data["email"]
         password = serializer.validated_data["password"]
         user = None
@@ -47,24 +83,34 @@ class LoginView(APIView):
             return Response({"detail": "Email hoặc mật khẩu không đúng."}, status=status.HTTP_400_BAD_REQUEST)
         if not user.is_active:
             return Response({"detail": "Tài khoản bị khóa."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        profile, created = UserProfile.objects.get_or_create(user=user)
 
-        # Option: revoke old tokens / or keep multiple tokens. Here we create a new token.
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="login")
-        resp = {"token": token_plain, "expires_at": token_obj.expires_at}
-        return Response(TokenResponseSerializer(resp).data, status=status.HTTP_200_OK)
+
+        resp = {
+            "token": token_plain,
+            "expires_at": token_obj.expires_at,
+            "user": {
+                "id": user.id,
+                "name": user.get_full_name(),
+                "email": user.email,
+                "dateofBirth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
+                "avatar_url": profile.avatar_url
+            }
+        }
+        return Response(resp, status=status.HTTP_200_OK)
 
 
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        # revoke current token used in Authorization header
-        auth = request.auth  # with ExpiringTokenAuthentication, request.auth is token obj
+        auth = request.auth
         if hasattr(auth, "revoke"):
             auth.revoke()
             return Response({"detail": "Token revoked"}, status=status.HTTP_200_OK)
-        # else try parse header and revoke if found
-        from .models import ExpiringToken
+
         header = request.META.get("HTTP_AUTHORIZATION", "")
         parts = header.split()
         if len(parts) == 2:
@@ -77,9 +123,6 @@ class LogoutView(APIView):
 
 
 class TokenListView(APIView):
-    """
-    Optional: list tokens of current user (for management). Returns created_at, expires_at, revoked, name.
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):

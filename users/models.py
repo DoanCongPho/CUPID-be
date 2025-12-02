@@ -1,12 +1,11 @@
-from django.contrib.auth.models import AbstractUser
-from django.db import models
-from django.conf import settings
-from django.utils.translation import gettext_lazy as _
 import secrets
 import hashlib
 from datetime import timedelta
+from django.contrib.auth.models import AbstractUser
+from django.db import models
 from django.conf import settings
 from django.utils import timezone
+from django.utils.translation import gettext_lazy as _
 
 class CustomUser(AbstractUser):
     email = models.EmailField(_("email address"), unique=True)
@@ -20,11 +19,10 @@ class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="profile", on_delete=models.CASCADE)
     bio = models.TextField(blank=True)
     avatar_url = models.URLField(blank=True)
+    date_of_birth = models.DateField(null=True, blank=True)
     indirect_teaser = models.CharField(max_length=255, blank=True)
-
     external_id = models.CharField(max_length=255, blank=True, db_index=True)
     is_service_account = models.BooleanField(default=False, db_index=True)
-
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -91,3 +89,14 @@ class ExpiringToken(models.Model):
     def revoke(self):
         self.revoked = True
         self.save(update_fields=["revoked"])
+
+class Todo(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="todos", on_delete=models.CASCADE)
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.title} ({'x' if self.is_completed else ' '})"

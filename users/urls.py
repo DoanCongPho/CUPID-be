@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ProfileView
+from .views import ProfileView, TodoListCreateView, TodoDetailView
 from .views_auth import RegisterView, LoginView, LogoutView, TokenListView
 
 urlpatterns = [
@@ -8,4 +8,6 @@ urlpatterns = [
     path("auth/login/", LoginView.as_view(), name="auth-login"),
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
     path("auth/tokens/", TokenListView.as_view(), name="auth-tokens"),
+    path('todos/', TodoListCreateView.as_view(), name='todo-list-create'),
+    path('todos/<int:pk>/', TodoDetailView.as_view(), name='todo-detail'),
 ]
