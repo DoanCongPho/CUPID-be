@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import UserProfile, Todo
+from .models import UserProfile, Task
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -13,17 +13,23 @@ class UserProfileSerializer(serializers.ModelSerializer):
         fields = [
             "username",
             "email",
-            "bio",
-            "avatar_url",
+            "full_name",
+            "nickname",
+            "teaser_description",
+            "profile_photo_url",
+            "verification_video_url",
+            "is_verified",
+            "total_xp",
             "date_of_birth",
-            "indirect_teaser",
+            "home_latitude",
+            "home_longitude",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["created_at", "updated_at", "username", "email"]
+        read_only_fields = ["created_at", "updated_at", "username", "email", "total_xp", "is_verified"]
 
-class TodoSerializer(serializers.ModelSerializer):
+class TaskSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Todo
-        fields = ['id', 'title', 'description', 'is_completed', 'created_at', 'updated_at']
+        model = Task
+        fields = ['id', 'description', 'scheduled_start_time', 'scheduled_end_time', 'is_transformed_to_quest', 'created_at', 'updated_at']
         read_only_fields = ['id', 'created_at', 'updated_at']

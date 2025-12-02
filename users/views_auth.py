@@ -20,7 +20,7 @@ class RegisterView(APIView):
         email = serializer.validated_data["email"]
         password = serializer.validated_data["password"]
         date_of_birth = serializer.validated_data["dateofBirth"]
-        avatar_url = serializer.validated_data.get("avatar_url", "")
+        profile_photo_url = serializer.validated_data.get("profile_photo_url", "")
 
 
         # Parse name into first_name and last_name
@@ -43,9 +43,10 @@ class RegisterView(APIView):
         # Update profile with additional fields
         # Profile is auto-created via signals, but we need to update it
         profile, created = UserProfile.objects.get_or_create(user=user)
+        profile.full_name = name
         profile.date_of_birth = date_of_birth
-        profile.avatar_url = avatar_url
-        profile.save(update_fields=["date_of_birth", "avatar_url", "updated_at"])
+        profile.profile_photo_url = profile_photo_url
+        profile.save(update_fields=["full_name", "date_of_birth", "profile_photo_url", "updated_at"])
 
         # Generate token
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="initial")
@@ -55,10 +56,10 @@ class RegisterView(APIView):
             "expires_at": token_obj.expires_at,
             "user": {
                 "id": user.id,
-                "name": user.get_full_name(),
+                "name": profile.full_name,
                 "email": user.email,
                 "dateofBirth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
-                "avatar_url": profile.avatar_url
+                "profile_photo_url": profile.profile_photo_url
             }
         }
         return Response(resp, status=status.HTTP_201_CREATED)
@@ -93,10 +94,10 @@ class LoginView(APIView):
             "expires_at": token_obj.expires_at,
             "user": {
                 "id": user.id,
-                "name": user.get_full_name(),
+                "name": profile.full_name or user.get_full_name(),
                 "email": user.email,
                 "dateofBirth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
-                "avatar_url": profile.avatar_url
+                "profile_photo_url": profile.profile_photo_url
             }
         }
         return Response(resp, status=status.HTTP_200_OK)

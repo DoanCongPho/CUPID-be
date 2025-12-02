@@ -7,20 +7,40 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
 
-class CustomUser(AbstractUser):
+class User(AbstractUser):
+    """
+    Lưu trữ thông tin cốt lõi dùng cho việc xác thực (đăng nhập/đăng ký).
+    Đây là bảng trung tâm của hệ thống.
+    """
     email = models.EmailField(_("email address"), unique=True)
+    phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    provider = models.CharField(max_length=50, blank=True, default="")  # e.g., "google", "facebook", "email"
+    provider_id = models.CharField(max_length=255, blank=True, default="")  # e.g., Auth0 sub
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
     USERNAME_FIELD = "email"
-    REQUIRED_FIELDS = ["username"]  # username vẫn required để admin dễ quản lý
+    REQUIRED_FIELDS = []
 
     def __str__(self):
         return self.email if self.email else self.username
 
 class UserProfile(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="profile", on_delete=models.CASCADE)
-    bio = models.TextField(blank=True)
-    avatar_url = models.URLField(blank=True)
+    """
+    Lưu trữ tất cả thông tin công khai và mô tả về người dùng.
+    Được tách biệt khỏi bảng User để tăng cường bảo mật.
+    """
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, related_name="profile", on_delete=models.CASCADE, primary_key=True)
+    full_name = models.CharField(max_length=255, blank=True)  # Tên thật
     date_of_birth = models.DateField(null=True, blank=True)
-    indirect_teaser = models.CharField(max_length=255, blank=True)
+    nickname = models.CharField(max_length=255, blank=True)  # Tên hiển thị chính
+    teaser_description = models.CharField(max_length=255, blank=True)  # Mô tả gián tiếp
+    profile_photo_url = models.URLField(blank=True)
+    verification_video_url = models.URLField(blank=True)
+    is_verified = models.BooleanField(default=False)
+    total_xp = models.IntegerField(default=0)  # Điểm kinh nghiệm
+    home_latitude = models.FloatField(null=True, blank=True)  # Vị trí cố định
+    home_longitude = models.FloatField(null=True, blank=True)
     external_id = models.CharField(max_length=255, blank=True, db_index=True)
     is_service_account = models.BooleanField(default=False, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -90,13 +110,18 @@ class ExpiringToken(models.Model):
         self.revoked = True
         self.save(update_fields=["revoked"])
 
-class Todo(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="todos", on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    description = models.TextField(blank=True)
-    is_completed = models.BooleanField(default=False)
+class Task(models.Model):
+    """
+    Lưu trữ các công việc (to-do) thô do người dùng nhập vào.
+    Đóng vai trò là dữ liệu đầu vào cho model AI.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name="tasks", on_delete=models.CASCADE)
+    description = models.TextField()  # Nội dung công việc
+    scheduled_start_time = models.DateTimeField(null=True, blank=True)
+    scheduled_end_time = models.DateTimeField(null=True, blank=True)
+    is_transformed_to_quest = models.BooleanField(default=False)  # Đã được xử lý hay chưa
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"{self.title} ({'x' if self.is_completed else ' '})"
+        return f"Task: {self.description[:50]}"

@@ -9,7 +9,7 @@ class RegisterSerializer(serializers.Serializer):
     email = serializers.EmailField()
     password = serializers.CharField(write_only=True, min_length=8)
     dateofBirth = serializers.CharField()  # Accept as string, will parse to date
-    avatar_url = serializers.URLField(allow_blank=True, required=False)
+    profile_photo_url = serializers.URLField(allow_blank=True, required=False)
 
     def validate_email(self, value):
         if User.objects.filter(email__iexact=value).exists():
@@ -49,7 +49,7 @@ class RegisterSerializer(serializers.Serializer):
             "Định dạng ngày không hợp lệ. Vui lòng sử dụng: YYYY-MM-DD, DD/MM/YYYY, hoặc MM/DD/YYYY"
         )
 
-    def validate_avatar_url(self, value):
+    def validate_profile_photo_url(self, value):
         """
         Validate profile picture URL
         """

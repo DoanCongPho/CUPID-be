@@ -36,7 +36,7 @@ INSTALLED_APPS = [
     "users",
 ]
 
-AUTH_USER_MODEL = "users.CustomUser"
+AUTH_USER_MODEL = "users.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -73,9 +73,8 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # ... (BASE_DIR của bạn ở trên này) ...
 
-# Kiểm tra xem biến 'DB_HOST' có được Docker cung cấp hay không
-# os.environ.get('DB_HOST') sẽ trả về 'db' (trong Docker) hoặc None (ở local)
-IS_TESTING = "test" in sys.argv
+# Kiểm tra xem có phải testing mode không (từ .env hoặc command line)
+IS_TESTING = os.getenv("IS_TESTING", "False").lower() in ("true", "1", "t") or "test" in sys.argv
 
 if IS_TESTING:
     print("Running tests with SQLite (local).")

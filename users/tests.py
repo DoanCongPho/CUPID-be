@@ -1,6 +1,6 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
-from .models import CustomUser
+from .models import User
 
 
 class CompleteUserAuthTests(APITestCase):
@@ -10,7 +10,7 @@ class CompleteUserAuthTests(APITestCase):
         self.profile_url = '/api/profile/'
         self.logout_url = '/api/auth/logout/'
         self.tokens_url = '/api/auth/tokens/'
-        self.todos_url = '/api/todos/'
+        self.tasks_url = '/api/tasks/'
         # user_data as before
 
         
@@ -19,7 +19,7 @@ class CompleteUserAuthTests(APITestCase):
             'email': 'test@example.com',
             'password': 'testpass123',
             'dateofBirth': '1990-01-01',
-            'avatar_url': 'https://example.com/avatar.jpg'
+            'profile_photo_url': 'https://example.com/avatar.jpg'
         }
 
     def test_01_register_complete(self):
@@ -27,9 +27,9 @@ class CompleteUserAuthTests(APITestCase):
         response = self.client.post(self.register_url, self.user_data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertIn('token', response.data)
-        self.assertIn('avatar_url', response.data['user'])
-        user = CustomUser.objects.get(email=self.user_data['email'])
-        self.assertEqual(user.profile.avatar_url, self.user_data['avatar_url'])
+        self.assertIn('profile_photo_url', response.data['user'])
+        user = User.objects.get(email=self.user_data['email'])
+        self.assertEqual(user.profile.profile_photo_url, self.user_data['avatar_url'])
 
     def test_02_login_profile(self):
         """✅ Login → Profile access"""
@@ -40,8 +40,8 @@ class CompleteUserAuthTests(APITestCase):
         profile_resp = self.client.get(self.profile_url)
         self.assertEqual(profile_resp.status_code, status.HTTP_200_OK)
 
-    def test_03_todo_crud(self):
-        """✅ Full Todo CRUD"""
+    def test_03_task_crud(self):
+        """✅ Full Task CRUD"""
         self.client.post(self.register_url, self.user_data, format='json')
         login_resp = self.client.post(self.login_url, {
             'email': self.user_data['email'], 'password': self.user_data['password']
@@ -49,12 +49,12 @@ class CompleteUserAuthTests(APITestCase):
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {login_resp.data["token"]}')
         
         # Create
-        todo_resp = self.client.post(self.todos_url, {'title': 'Test Todo'}, format='json')
-        todo_id = todo_resp.data['id']
+        task_resp = self.client.post(self.tasks_url, {'description': 'Test Task'}, format='json')
+        task_id = task_resp.data['id']
         
         # List & Update
-        list_resp = self.client.get(self.todos_url)
-        self.client.put(f'{self.todos_url}{todo_id}/', {'is_completed': True}, format='json')
+        list_resp = self.client.get(self.tasks_url)
+        self.client.put(f'{self.tasks_url}{task_id}/', {'is_transformed_to_quest': True}, format='json')
         self.assertEqual(len(list_resp.data), 1)
 
     def test_04_logout_revoke(self):
