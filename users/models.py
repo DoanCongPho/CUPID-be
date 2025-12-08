@@ -18,7 +18,7 @@ class User(AbstractUser):
     provider_id = models.CharField(max_length=255, blank=True, default="")  # e.g., Auth0 sub
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
@@ -125,3 +125,18 @@ class Task(models.Model):
 
     def __str__(self):
         return f"Task: {self.description[:50]}"
+
+
+class UserModeSettings(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        related_name="settings",
+        on_delete=models.CASCADE
+    )
+    ghost_mode_enabled = models.BooleanField(default=False)
+    daily_reminders_enabled = models.BooleanField(default=True)
+    location_sharing_enabled = models.BooleanField(default=True)
+    spotmatch_notifications_enabled = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"Settings for {self.user.username}"

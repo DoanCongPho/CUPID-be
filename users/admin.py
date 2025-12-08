@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 from django.utils.translation import gettext_lazy as _
-from .models import User, UserProfile, Task
+from .models import User, UserProfile, Task, UserModeSettings
 
 @admin.register(User)
 class UserAdmin(UserAdmin):
@@ -33,3 +33,22 @@ class TaskAdmin(admin.ModelAdmin):
     list_display = ("user", "description", "is_transformed_to_quest", "created_at")
     search_fields = ("user__username", "description")
     ordering = ("-created_at",)
+
+
+@admin.register(UserModeSettings)
+class SettingsAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "ghost_mode_enabled",
+        "daily_reminders_enabled",
+        "location_sharing_enabled",
+        "spotmatch_notifications_enabled",
+    )
+    search_fields = ("user__username", "user__email")
+    list_filter = (
+        "ghost_mode_enabled",
+        "daily_reminders_enabled",
+        "location_sharing_enabled",
+        "spotmatch_notifications_enabled",
+    )
+    ordering = ("user",)

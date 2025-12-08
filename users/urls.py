@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import ProfileView, TaskListCreateView, TaskDetailView
+from .views import ProfileView, TaskListCreateView, TaskDetailView, UserModeSettingsView
 from .views_auth import RegisterView, LoginView, LogoutView, TokenListView
 
 urlpatterns = [
@@ -10,4 +10,5 @@ urlpatterns = [
     path("auth/tokens/", TokenListView.as_view(), name="auth-tokens"),
     path('tasks/', TaskListCreateView.as_view(), name='task-list-create'),
     path('tasks/<int:pk>/', TaskDetailView.as_view(), name='task-detail'),
+    path("settings/", UserModeSettingsView.as_view(), name="user-settings"),
 ]

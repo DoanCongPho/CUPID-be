@@ -6,8 +6,12 @@ from rest_framework import status
 from .serializers_auth import RegisterSerializer, LoginSerializer
 from .models import UserProfile, ExpiringToken
 
+# drf-spectacular helpers
+from drf_spectacular.utils import extend_schema, OpenApiResponse
+
 User = get_user_model()
 
+@extend_schema(request=RegisterSerializer, responses=OpenApiResponse(description="Registration response: token and user info"))
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 
@@ -17,14 +21,14 @@ class RegisterView(APIView):
 
         # Extract validated data
         validated_data = serializer.validated_data
-        
+
         # User model fields
         email = validated_data.get("email", "").strip()
         phone_number = validated_data.get("phone_number", "").strip()
         password = validated_data["password"]
         provider = validated_data.get("provider", "email")
         provider_id = validated_data.get("provider_id", "")
-        
+
         # UserProfile model fields
         full_name = validated_data.get("full_name", "").strip()
         nickname = validated_data.get("nickname", "").strip()
@@ -85,6 +89,7 @@ class RegisterView(APIView):
         return Response(resp, status=status.HTTP_201_CREATED)
 
 
+@extend_schema(request=LoginSerializer, responses=OpenApiResponse(description="Login response: token and user info"))
 class LoginView(APIView):
     permission_classes = [AllowAny]
 
@@ -119,6 +124,7 @@ class LoginView(APIView):
         return Response(resp, status=status.HTTP_200_OK)
 
 
+@extend_schema(responses={200: OpenApiResponse(description="Token revoked"), 400: OpenApiResponse(description="No token found")})
 class LogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -139,6 +145,7 @@ class LogoutView(APIView):
         return Response({"detail": "No token found"}, status=status.HTTP_400_BAD_REQUEST)
 
 
+@extend_schema(responses=OpenApiResponse(description="List of user tokens"))
 class TokenListView(APIView):
     permission_classes = [IsAuthenticated]
 
