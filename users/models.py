@@ -119,7 +119,6 @@ class Task(models.Model):
     description = models.TextField()  # Nội dung công việc
     scheduled_start_time = models.DateTimeField(null=True, blank=True)
     scheduled_end_time = models.DateTimeField(null=True, blank=True)
-    is_transformed_to_quest = models.BooleanField(default=False)  # Đã được xử lý hay chưa
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

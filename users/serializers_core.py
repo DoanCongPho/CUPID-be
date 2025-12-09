@@ -10,7 +10,6 @@ class TaskSerializer(serializers.ModelSerializer):
             "description",
             "scheduled_start_time",
             "scheduled_end_time",
-            "is_transformed_to_quest",
             "created_at",
             "updated_at",
         ]

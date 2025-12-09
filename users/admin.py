@@ -30,7 +30,7 @@ class UserProfileAdmin(admin.ModelAdmin):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
-    list_display = ("user", "description", "is_transformed_to_quest", "created_at")
+    list_display = ("user", "description", "created_at")
     search_fields = ("user__username", "description")
     ordering = ("-created_at",)
 
