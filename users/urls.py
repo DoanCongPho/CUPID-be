@@ -1,5 +1,22 @@
 from django.urls import path
-from .views import ProfileView, TaskListCreateView, TaskDetailView, UserModeSettingsView
+from .views import (
+    ProfileView,
+    TaskListCreateView,
+    TaskDetailView,
+    UserModeSettingsView,
+    MatchListCreateView,
+    MatchDetailView,
+    QuestListCreateView,
+    QuestDetailView,
+    ChatListCreateView,
+    ChatDetailView,
+    MessageListCreateView,
+    MessageDetailView,
+    MatchWithUserView,
+    PreferenceListCreateView,
+    UserPreferenceListCreateView,
+    UserPreferenceDestroyView,
+)
 from .views_auth import RegisterView, LoginView, LogoutView, TokenListView
 
 urlpatterns = [
@@ -11,4 +28,17 @@ urlpatterns = [
     path('tasks/', TaskListCreateView.as_view(), name='task-list-create'),
     path('tasks/<int:pk>/', TaskDetailView.as_view(), name='task-detail'),
     path("settings/", UserModeSettingsView.as_view(), name="user-settings"),
+    path('matches/', MatchListCreateView.as_view(), name='match-list-create'),
+    path('matches/<int:pk>/', MatchDetailView.as_view(), name='match-detail'),
+    path('quests/', QuestListCreateView.as_view(), name='quest-list-create'),
+    path('quests/<int:pk>/', QuestDetailView.as_view(), name='quest-detail'),
+    path('chats/', ChatListCreateView.as_view(), name='chat-list-create'),
+    path('chats/<int:pk>/', ChatDetailView.as_view(), name='chat-detail'),
+    path('chats/<int:chat_pk>/messages/', MessageListCreateView.as_view(), name='message-list-create'),
+    path('messages/<int:pk>/', MessageDetailView.as_view(), name='message-detail'),
+    path('matches/with/<int:user_id>/', MatchWithUserView.as_view(), name='match-with-user'),
+    # Preferences API
+    path('preferences/', PreferenceListCreateView.as_view(), name='preference-list-create'),
+    path('user-preferences/', UserPreferenceListCreateView.as_view(), name='user-preference-list-create'),
+    path('user-preferences/<int:pref_id>/', UserPreferenceDestroyView.as_view(), name='user-preference-destroy'),
 ]

@@ -11,7 +11,7 @@ class RegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True, min_length=8)
     provider = serializers.CharField(max_length=50, required=False, allow_blank=True, default="email")
     provider_id = serializers.CharField(max_length=255, required=False, allow_blank=True)
-    
+
     # UserProfile model fields (optional)
     full_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
     nickname = serializers.CharField(max_length=255, required=False, allow_blank=True)
@@ -21,15 +21,17 @@ class RegisterSerializer(serializers.Serializer):
     verification_video_url = serializers.URLField(required=False, allow_blank=True)
     home_latitude = serializers.FloatField(required=False, allow_null=True)
     home_longitude = serializers.FloatField(required=False, allow_null=True)
+    # optional list of Preference IDs to attach at registration
+    preferences = serializers.ListField(child=serializers.IntegerField(), required=False)
 
     def validate(self, data):
         """Validate that either email or phone_number is provided"""
         email = data.get("email", "").strip()
         phone_number = data.get("phone_number", "").strip()
-        
+
         if not email and not phone_number:
             raise serializers.ValidationError("Email hoặc phone_number là bắt buộc.")
-        
+
         return data
 
     def validate_email(self, value):
@@ -55,7 +57,7 @@ class RegisterSerializer(serializers.Serializer):
         """
         if not value:
             return None
-            
+
         date_formats = [
             "%Y-%m-%d",      # 2000-01-15
             "%d/%m/%Y",      # 15/01/2000
@@ -63,7 +65,7 @@ class RegisterSerializer(serializers.Serializer):
             "%Y/%m/%d",      # 2000/01/15
             "%d-%m-%Y",      # 15-01-2000
         ]
-        
+
         for fmt in date_formats:
             try:
                 parsed_date = datetime.strptime(value, fmt).date()
@@ -77,7 +79,7 @@ class RegisterSerializer(serializers.Serializer):
                 return parsed_date
             except ValueError:
                 continue
-        
+
         raise serializers.ValidationError(
             "Định dạng ngày không hợp lệ. Vui lòng sử dụng: YYYY-MM-DD, DD/MM/YYYY, hoặc MM/DD/YYYY"
         )
@@ -86,20 +88,20 @@ class RegisterSerializer(serializers.Serializer):
         """Validate profile picture URL"""
         if not value:
             return ""
-        
+
         if not value.startswith(('http://', 'https://')):
             raise serializers.ValidationError("Profile picture must be a valid HTTP/HTTPS URL")
-        
+
         return value
 
     def validate_verification_video_url(self, value):
         """Validate verification video URL"""
         if not value:
             return ""
-        
+
         if not value.startswith(('http://', 'https://')):
             raise serializers.ValidationError("Verification video must be a valid HTTP/HTTPS URL")
-        
+
         return value
 
 
@@ -110,15 +112,15 @@ class LoginSerializer(serializers.Serializer):
 
     def validate(self, data):
         from django.contrib.auth import authenticate
-        
+
         email = data.get("email", "").strip()
         phone_number = data.get("phone_number", "").strip()
         password = data.get("password")
-        
+
         # Validate that either email or phone_number is provided
         if not email and not phone_number:
             raise serializers.ValidationError("Email hoặc phone_number là bắt buộc.")
-        
+
         # Try to authenticate with email first
         user = None
         if email:
@@ -128,7 +130,7 @@ class LoginSerializer(serializers.Serializer):
                     raise serializers.ValidationError("Email hoặc mật khẩu không đúng.")
             except User.DoesNotExist:
                 pass
-        
+
         # If not found with email, try phone_number
         if not user and phone_number:
             try:
@@ -137,13 +139,13 @@ class LoginSerializer(serializers.Serializer):
                     raise serializers.ValidationError("Số điện thoại hoặc mật khẩu không đúng.")
             except User.DoesNotExist:
                 pass
-        
+
         if not user:
             raise serializers.ValidationError("Email/Số điện thoại hoặc mật khẩu không đúng.")
-        
+
         if not user.is_active:
             raise serializers.ValidationError("Tài khoản đã bị vô hiệu hóa.")
-        
+
         data["user"] = user
         return data
 

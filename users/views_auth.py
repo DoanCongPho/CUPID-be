@@ -67,6 +67,18 @@ class RegisterView(APIView):
         profile.home_longitude = home_longitude
         profile.save()
 
+        # Attach preferences if provided (list of Preference IDs)
+        prefs = validated_data.get("preferences") or []
+        if prefs:
+            from .models import Preference, UserPreference
+            for pref_id in prefs:
+                try:
+                    pref = Preference.objects.get(pk=int(pref_id))
+                    UserPreference.objects.get_or_create(user=user, preference=pref)
+                except (Preference.DoesNotExist, ValueError):
+                    # skip invalid ids
+                    continue
+
         # Generate token
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="initial")
 

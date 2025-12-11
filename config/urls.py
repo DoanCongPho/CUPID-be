@@ -9,6 +9,10 @@ from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, Sp
 def api_index(request):
     return render(request, 'api_index.html')
 
+
+def chat_ws_test(request):
+    return render(request, 'chat_ws_test.html')
+
 urlpatterns = [
     path('admin/', admin.site.urls),
 
@@ -19,6 +23,9 @@ urlpatterns = [
 
     # Render developer index at exact /api/
     path('api/', api_index),
+
+    # chat websocket test page
+    path('api/chat_ws_test.html', chat_ws_test, name='chat-ws-test'),
 
     # include users app routes under /api/
     path('api/', include('users.urls')),

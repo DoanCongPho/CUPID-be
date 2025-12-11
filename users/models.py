@@ -121,10 +121,52 @@ class Task(models.Model):
     scheduled_end_time = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    is_free = models.BooleanField(default=False)
+
 
     def __str__(self):
         return f"Task: {self.description[:50]}"
 
+class Match(models.Model):
+    """
+    Represents a match between two users.
+    """
+    STATUS_SUCCESSFUL = "successful"
+    STATUS_USER1_MISSED = "user1_missed"
+    STATUS_USER2_MISSED = "user2_missed"
+    STATUS_EXPIRED = "expired"
+
+    STATUS_CHOICES = [
+        (STATUS_SUCCESSFUL, "successful"),
+        (STATUS_USER1_MISSED, "user1_missed"),
+        (STATUS_USER2_MISSED, "user2_missed"),
+        (STATUS_EXPIRED, "expired"),
+    ]
+
+    user1 = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="matches_as_user1",
+        on_delete=models.CASCADE,
+    )
+    user2 = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        related_name="matches_as_user2",
+        on_delete=models.CASCADE,
+    )
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_SUCCESSFUL)
+    matched_at = models.DateTimeField(null=True, blank=True)
+    user1_rating = models.IntegerField(null=True, blank=True)
+    user2_rating = models.IntegerField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "match"
+        verbose_name_plural = "matches"
+        indexes = [
+            models.Index(fields=["matched_at"]),
+        ]
+
+    def __str__(self):
+        return f"Match {self.pk}: {self.user1_id} <-> {self.user2_id} ({self.status})"
 
 class UserModeSettings(models.Model):
     user = models.OneToOneField(
@@ -139,3 +181,107 @@ class UserModeSettings(models.Model):
 
     def __str__(self):
         return f"Settings for {self.user.username}"
+
+class Quests(models.Model):
+    # one-to-one to Match: match_id is unique and required
+    match = models.OneToOneField(
+        Match,
+        on_delete=models.CASCADE,
+        related_name="quests",
+    )
+    location_name = models.CharField(max_length=255, blank=True)
+    activity = models.CharField(max_length=255)
+    location_latitude = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True)
+    location_longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
+    quest_date = models.DateField()
+
+    STATUS_PENDING = "pending"
+    STATUS_COMPLETED = "completed"
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "pending"),
+        (STATUS_COMPLETED, "completed"),
+    ]
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    xp_reward = models.IntegerField(null=True, blank=True, default=0)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "quest"
+        verbose_name_plural = "quests"
+        indexes = [
+            models.Index(fields=["quest_date"]),
+        ]
+
+    def __str__(self):
+        return f"Quest {self.pk} for match {self.match_id} ({self.status})"
+
+class Chat(models.Model):
+    """Represents a chat for a Match. One-to-one with Match (unique per match)."""
+    match = models.OneToOneField(
+        Match,
+        on_delete=models.CASCADE,
+        related_name="chat",
+    )
+
+    STATUS_ACTIVE = "active"
+    STATUS_CLOSED = "closed"
+    STATUS_CHOICES = [
+        (STATUS_ACTIVE, "active"),
+        (STATUS_CLOSED, "closed"),
+    ]
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default=STATUS_ACTIVE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "chat"
+        verbose_name_plural = "chats"
+        indexes = [
+            models.Index(fields=["created_at"]),
+        ]
+
+    def __str__(self):
+        return f"Chat {self.pk} for match {self.match_id} ({self.status})"
+
+
+class Message(models.Model):
+    """A single message inside a Chat."""
+    chat = models.ForeignKey(Chat, on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="sent_messages")
+    content = models.TextField()
+    sent_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["sent_at"]
+
+    def __str__(self):
+        return f"Message {self.pk} in chat {self.chat_id} by user {self.sender_id}"
+
+
+# Preferences: simple lookup table and join table for user preferences
+class Preference(models.Model):
+    name = models.CharField(max_length=150, unique=True)
+
+    class Meta:
+        verbose_name = "preference"
+        verbose_name_plural = "preferences"
+
+    def __str__(self):
+        return self.name
+
+
+class UserPreference(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="preferences")
+    preference = models.ForeignKey(Preference, on_delete=models.CASCADE, related_name="users")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ("user", "preference")
+        verbose_name = "user preference"
+        verbose_name_plural = "user preferences"
+
+    def __str__(self):
+        return f"UserPreference user={self.user_id} pref={self.preference_id}"

@@ -35,6 +35,8 @@ INSTALLED_APPS = [
     "rest_framework",
     "drf_spectacular",
     "users.apps.UsersConfig",
+    # channels for websockets / realtime
+    "channels",
 ]
 
 AUTH_USER_MODEL = "users.User"
@@ -68,6 +70,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# ASGI application for Channels
+ASGI_APPLICATION = "config.asgi.application"
+
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -92,15 +97,15 @@ else:
     }
 
 
-# CACHES = {
-#     "default": {
-#         "BACKEND": "django_redis.cache.RedisCache",
-#         "LOCATION": os.environ.get("REDIS_URL", "redis://redis:6379/1"),
-#         "OPTIONS": {
-#             "CLIENT_CLASS": "django_redis.client.DefaultClient",
-#         },
-#     }
-# }
+# Channel layer config (Redis). REDIS_URL expected in environment, fallback to redis://redis:6379/0
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        # "CONFIG": {
+        #     "hosts": [os.environ.get("REDIS_URL", "redis://redis:6379/0")],
+        # },
+    },
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

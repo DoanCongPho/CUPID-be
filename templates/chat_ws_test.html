@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Chat WS Test</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+      }
+      .panel {
+        max-width: 800px;
+        margin: auto;
+      }
+      input,
+      button,
+      textarea {
+        font-size: 14px;
+      }
+      #messages {
+        border: 1px solid #ddd;
+        height: 300px;
+        overflow: auto;
+        padding: 8px;
+        background: #fafafa;
+      }
+      .msg {
+        margin-bottom: 8px;
+      }
+      .mine {
+        color: #0a58ca;
+      }
+      .meta {
+        font-size: 12px;
+        color: #666;
+      }
+      .controls {
+        margin-top: 8px;
+        display: flex;
+        gap: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h2>Chat WebSocket Tester</h2>
+      <p>
+        Use this page to connect to a chat websocket and send/receive messages
+        in realtime.
+      </p>
+
+      <label>API base (leave default for same host):</label><br />
+      <input
+        id="apiBase"
+        type="text"
+        value=""
+        placeholder="e.g. https://example.com"
+        style="width: 100%"
+      />
+
+      <label>Auth token (ExpiringToken plaintext):</label><br />
+      <input
+        id="token"
+        type="text"
+        placeholder="Token..."
+        style="width: 100%"
+      />
+
+      <label>Chat ID:</label><br />
+      <input id="chatId" type="number" placeholder="123" style="width: 100%" />
+
+      <div style="margin-top: 8px">
+        <button id="connectBtn">Connect WebSocket</button>
+        <button id="disconnectBtn" disabled>Disconnect</button>
+        <button id="loadHistoryBtn">Load history (REST)</button>
+      </div>
+
+      <h3>Messages</h3>
+      <div id="messages"></div>
+
+      <div class="controls">
+        <input
+          id="msgInput"
+          type="text"
+          placeholder="Type a message..."
+          style="flex: 1"
+        />
+        <button id="sendBtn" disabled>Send</button>
+      </div>
+
+      <hr />
+      <p class="meta">
+        Tips: Use the chat websocket URL
+        <code>/ws/chats/&lt;chat_id&gt;/?token=&lt;token&gt;</code>. Ensure
+        token is valid and chat exists and you are a participant.
+      </p>
+    </div>
+
+    <script>
+      const connectBtn = document.getElementById("connectBtn");
+      const disconnectBtn = document.getElementById("disconnectBtn");
+      const sendBtn = document.getElementById("sendBtn");
+      const loadHistoryBtn = document.getElementById("loadHistoryBtn");
+      const messagesEl = document.getElementById("messages");
+      const msgInput = document.getElementById("msgInput");
+      const tokenInput = document.getElementById("token");
+      const chatIdInput = document.getElementById("chatId");
+      const apiBaseInput = document.getElementById("apiBase");
+
+      let ws = null;
+
+      function appendMessage(item, mine = false) {
+        const el = document.createElement("div");
+        el.className = "msg" + (mine ? " mine" : "");
+        el.innerHTML = `<div class="meta">${item.sent_at || ""} <strong>${
+          item.sender?.email || item.sender?.id || ""
+        }</strong></div><div>${item.content}</div>`;
+        messagesEl.appendChild(el);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      function getWsUrl(chatId, token) {
+        let base = apiBaseInput.value.trim() || window.location.origin;
+
+        // Remove trailing slashes only
+        base = base.replace(/\/+$/, "");
+
+        // Detect protocol and convert
+        let wsBase;
+        if (base.startsWith("http://")) {
+          wsBase = base.replace("http://", "ws://");
+        } else if (base.startsWith("https://")) {
+          wsBase = base.replace("https://", "wss://");
+        } else {
+          // No protocol → assume same host
+          wsBase = (location.protocol === "https:" ? "wss://" : "ws://") + base;
+        }
+
+        return `${wsBase}/ws/chats/${chatId}/?token=${encodeURIComponent(
+          token
+        )}`;
+      }
+
+      connectBtn.addEventListener("click", () => {
+        const token = tokenInput.value.trim();
+        const chatId = chatIdInput.value.trim();
+        if (!token || !chatId) {
+          alert("Provide token and chat id");
+          return;
+        }
+        const url = getWsUrl(chatId, token);
+        ws = new WebSocket(url);
+        ws.onopen = () => {
+          appendMessage({ content: "WebSocket connected." });
+          connectBtn.disabled = true;
+          disconnectBtn.disabled = false;
+          sendBtn.disabled = false;
+        };
+        ws.onmessage = (ev) => {
+          try {
+            const data = JSON.parse(ev.data);
+            if (data.type === "message") {
+              appendMessage(data.data, false);
+            } else {
+              appendMessage({ content: JSON.stringify(data) });
+            }
+          } catch (e) {
+            appendMessage({ content: ev.data });
+          }
+        };
+        ws.onclose = () => {
+          appendMessage({ content: "WebSocket disconnected." });
+          connectBtn.disabled = false;
+          disconnectBtn.disabled = true;
+          sendBtn.disabled = true;
+        };
+        ws.onerror = (e) => {
+          appendMessage({ content: "WebSocket error" });
+          console.error(e);
+        };
+      });
+
+      disconnectBtn.addEventListener("click", () => {
+        if (ws) {
+          ws.close();
+          ws = null;
+        }
+      });
+
+      sendBtn.addEventListener("click", () => {
+        const text = msgInput.value.trim();
+        if (!text) return;
+        if (!ws || ws.readyState !== WebSocket.OPEN) {
+          alert("WebSocket not open");
+          return;
+        }
+        ws.send(JSON.stringify({ type: "message", text }));
+        // optimistic UI
+        appendMessage(
+          {
+            content: text,
+            sender: { email: "me" },
+            sent_at: new Date().toISOString(),
+          },
+          true
+        );
+        msgInput.value = "";
+      });
+
+      loadHistoryBtn.addEventListener("click", async () => {
+        const chatId = chatIdInput.value.trim();
+        const token = tokenInput.value.trim();
+        if (!chatId || !token) {
+          alert("Provide chat id and token");
+          return;
+        }
+        // Build base and ensure no trailing slash to avoid double-slash when appending /api/...
+        const rawBase =
+          (apiBaseInput.value && apiBaseInput.value.trim()) ||
+          window.location.origin;
+        const baseClean = rawBase.replace(/\/$/, "");
+        const url = `${baseClean}/api/chats/${chatId}/messages/`;
+        try {
+          const res = await fetch(url, {
+            headers: { Authorization: `Token ${token}` },
+          });
+          if (!res.ok) {
+            const text = await res.text();
+            appendMessage({
+              content: "History load failed: " + res.status + " " + text,
+            });
+            return;
+          }
+          const data = await res.json();
+          messagesEl.innerHTML = "";
+          data.forEach((d) => appendMessage(d, false));
+        } catch (err) {
+          appendMessage({ content: "History load error" });
+        }
+      });
+    </script>
+  </body>
+</html>
