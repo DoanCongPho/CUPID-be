@@ -39,6 +39,7 @@ class UserProfile(models.Model):
     verification_video_url = models.URLField(blank=True)
     is_verified = models.BooleanField(default=False)
     total_xp = models.IntegerField(default=0)  # Điểm kinh nghiệm
+    is_matched = models.BooleanField(default=False)
     home_latitude = models.FloatField(null=True, blank=True)  # Vị trí cố định
     home_longitude = models.FloatField(null=True, blank=True)
     external_id = models.CharField(max_length=255, blank=True, db_index=True)
@@ -194,6 +195,8 @@ class Quests(models.Model):
     location_latitude = models.DecimalField(max_digits=10, decimal_places=8, null=True, blank=True)
     location_longitude = models.DecimalField(max_digits=11, decimal_places=8, null=True, blank=True)
     quest_date = models.DateField()
+    hint_user1 = models.CharField(max_length=255, null=True)
+    hint_user2 = models.CharField(max_length=255, null=True)
 
     STATUS_PENDING = "pending"
     STATUS_COMPLETED = "completed"
