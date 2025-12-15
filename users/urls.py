@@ -1,23 +1,32 @@
 from django.urls import path
 from .views import (
+    # Authentication
+    RegisterView,
+    LoginView,
+    LogoutView,
+    TokenListView,
+    # Profile
     ProfileView,
+    # Tasks & Settings
     TaskListCreateView,
     TaskDetailView,
     UserModeSettingsView,
+    # Matches & Quests
     MatchListCreateView,
     MatchDetailView,
     QuestListCreateView,
     QuestDetailView,
+    MatchWithUserView,
+    # Chats & Messages
     ChatListCreateView,
     ChatDetailView,
     MessageListCreateView,
     MessageDetailView,
-    MatchWithUserView,
+    # Preferences
     PreferenceListCreateView,
     UserPreferenceListCreateView,
     UserPreferenceDestroyView,
 )
-from .views_auth import RegisterView, LoginView, LogoutView, TokenListView
 
 urlpatterns = [
     path("profile/", ProfileView.as_view(), name="profile"),

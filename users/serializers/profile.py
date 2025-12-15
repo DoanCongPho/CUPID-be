@@ -1,10 +1,19 @@
+"""
+User Profile Serializers
+Serializers for UserProfile model
+"""
 from rest_framework import serializers
-from .models import UserProfile
 from django.contrib.auth import get_user_model
+from ..models import UserProfile
 
 User = get_user_model()
 
+
 class UserProfileSerializer(serializers.ModelSerializer):
+    """
+    Serializer for UserProfile model.
+    Includes username and email from related User model.
+    """
     user_id = serializers.IntegerField(source="user.id", read_only=True)
     username = serializers.CharField(source="user.username", read_only=True)
     email = serializers.EmailField(source="user.email", read_only=True)
@@ -26,7 +35,5 @@ class UserProfileSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "home_latitude",
             "home_longitude",
-            "created_at",
-            "updated_at",
         ]
-        read_only_fields = ["user_id", "created_at", "updated_at", "username", "email", "total_xp", "is_verified", "is_matched"]
+        read_only_fields = ["user_id", "username", "email", "is_verified", "total_xp"]
