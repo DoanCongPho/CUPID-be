@@ -92,9 +92,20 @@ if IS_TESTING:
     }
 else:
     print("Using dj-database-url for DATABASES config.")
-    DATABASES = {
-        "default": dj_database_url.config(default=os.environ.get("DATABASE_URL"))
-    }
+    db_url = os.environ.get("DATABASE_URL")
+    if db_url:
+        DATABASES = {
+            "default": dj_database_url.config(default=db_url)
+        }
+    else:
+        # Fallback to SQLite for local development
+        print("No DATABASE_URL set. Using SQLite for local development.")
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 
 
 # Channel layer config

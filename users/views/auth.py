@@ -34,6 +34,7 @@ class RegisterView(APIView):
 
         # UserProfile model fields
         full_name = validated_data.get("full_name", "").strip()
+        gender = validated_data.get("gender", "").strip()
         nickname = validated_data.get("nickname", "").strip()
         date_of_birth = validated_data.get("date_of_birth")
         teaser_description = validated_data.get("teaser_description", "").strip()
@@ -61,6 +62,7 @@ class RegisterView(APIView):
         # Create or update profile with all provided information
         profile, created = UserProfile.objects.get_or_create(user=user)
         profile.full_name = full_name
+        profile.gender = gender
         profile.nickname = nickname
         profile.date_of_birth = date_of_birth
         profile.teaser_description = teaser_description
@@ -93,6 +95,7 @@ class RegisterView(APIView):
                 "email": user.email,
                 "phone_number": user.phone_number,
                 "full_name": profile.full_name,
+                "gender": profile.gender,
                 "nickname": profile.nickname,
                 "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
                 "profile_photo_url": profile.profile_photo_url,
@@ -126,6 +129,7 @@ class LoginView(APIView):
                 "phone_number": user.phone_number,
                 "provider": user.provider,
                 "full_name": profile.full_name,
+                "gender": profile.gender,
                 "nickname": profile.nickname,
                 "date_of_birth": profile.date_of_birth.isoformat() if profile.date_of_birth else None,
                 "profile_photo_url": profile.profile_photo_url,

@@ -10,6 +10,11 @@ class UserProfile(models.Model):
     """
     Extended user profile information.
     """
+    GENDER_CHOICES = [
+        ("M", _("Male")),
+        ("F", _("Female"))
+    ]
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         related_name="profile",
@@ -17,6 +22,7 @@ class UserProfile(models.Model):
         primary_key=True
     )
     full_name = models.CharField(max_length=255, blank=True)
+    gender = models.CharField(max_length=1, choices=GENDER_CHOICES, null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     nickname = models.CharField(max_length=255, blank=True)
     teaser_description = models.CharField(max_length=255, blank=True)

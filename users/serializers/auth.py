@@ -23,6 +23,7 @@ class RegisterSerializer(serializers.Serializer):
 
     # UserProfile model fields (optional)
     full_name = serializers.CharField(max_length=255, required=False, allow_blank=True)
+    gender = serializers.CharField(max_length=1, required=False, allow_blank=True)
     nickname = serializers.CharField(max_length=255, required=False, allow_blank=True)
     date_of_birth = serializers.CharField(required=False, allow_blank=True)
     teaser_description = serializers.CharField(max_length=255, required=False, allow_blank=True)
