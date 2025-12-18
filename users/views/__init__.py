@@ -19,7 +19,7 @@ from .auth import (
 )
 
 # Profile views
-from .profile import ProfileView
+from .profile import ProfileView, UserPublicProfileView
 
 # Task and settings views
 from .task import (
@@ -62,6 +62,7 @@ __all__ = [
     "TokenListView",
     # Profile
     "ProfileView",
+    "UserPublicProfileView",
     # Task & Settings
     "TaskListCreateView",
     "TaskDetailView",

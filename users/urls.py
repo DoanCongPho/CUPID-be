@@ -7,6 +7,7 @@ from .views import (
     TokenListView,
     # Profile
     ProfileView,
+    UserPublicProfileView,
     # Tasks & Settings
     TaskListCreateView,
     TaskDetailView,
@@ -30,6 +31,7 @@ from .views import (
 
 urlpatterns = [
     path("profile/", ProfileView.as_view(), name="profile"),
+    path("profiles/<int:user_id>/", UserPublicProfileView.as_view(), name="user-public-profile"),
     path("auth/register/", RegisterView.as_view(), name="auth-register"),
     path("auth/login/", LoginView.as_view(), name="auth-login"),
     path("auth/logout/", LogoutView.as_view(), name="auth-logout"),
