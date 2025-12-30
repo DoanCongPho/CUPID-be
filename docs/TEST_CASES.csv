@@ -1,0 +1,432 @@
+Function/Feature ID;Case ID;Test case name;Test step;Expected Result (ER);Actual Result;Status;Tester;Tested Date;Remark
+Function 01: User Registration;;;;;;;;;
+UC01;TC01;Register with email only;"1. Send POST request to /api/register/
+2. Provide email: ""user@example.com""
+3. Provide password: ""securepass123""
+4. Submit registration";"1. Status 201 Created
+2. User account created
+3. Token returned
+4. UserProfile auto-created";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC01;TC02;Register with phone only;"1. Send POST request to /api/register/
+2. Provide phone_number: ""+1234567890""
+3. Provide password: ""securepass123""
+4. Submit registration";"1. Status 201 Created
+2. User account created
+3. Token returned
+4. UserProfile auto-created";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC01;TC03;Register with preferences;"1. Send POST request to /api/register/
+2. Provide email and password
+3. Include preferences: [1, 2, 3]
+4. Submit registration";"1. Status 201 Created
+2. User created with preferences
+3. Preferences linked to user profile";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC01;TC04;Register with all profile fields;"1. Send POST request to /api/register/
+2. Provide email, password, first_name, last_name
+3. Provide date_of_birth, gender, bio
+4. Submit registration";"1. Status 201 Created
+2. All fields saved correctly
+3. Complete profile returned";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC01;TC05;Register with duplicate email;"1. Create user with email ""test@example.com""
+2. Try to register again with same email
+3. Submit registration";"1. Status 400 Bad Request
+2. Error message about duplicate email
+3. Registration rejected";The same ER;Pass;Doan Cong Pho;12/15/25;Email uniqueness validated
+UC01;TC06;Register with duplicate phone;"1. Create user with phone ""+1234567890""
+2. Try to register again with same phone
+3. Submit registration";"1. Status 400 Bad Request
+2. Error message about duplicate phone
+3. Registration rejected";The same ER;Pass;Doan Cong Pho;12/15/25;Phone uniqueness validated
+UC01;TC07;Register underage user;"1. Send POST request to /api/register/
+2. Provide date_of_birth for age < 13
+3. Provide email and password
+4. Submit registration";"1. Status 400 Bad Request
+2. Age validation error message
+3. Registration rejected";The same ER;Pass;Doan Cong Pho;12/15/25;Minimum age 13 enforced
+UC01;TC08;Register with invalid date format;"1. Send POST request to /api/register/
+2. Provide date_of_birth: ""31/12/1990"" (wrong format)
+3. Provide email and password
+4. Submit registration";"1. Status 400 Bad Request
+2. Date format validation error
+3. Registration rejected";The same ER;Pass;Doan Cong Pho;12/15/25;Must be YYYY-MM-DD
+UC01;TC09;Register with future date of birth;"1. Send POST request to /api/register/
+2. Provide future date_of_birth
+3. Provide email and password
+4. Submit registration";"1. Status 400 Bad Request
+2. Date validation error
+3. Registration rejected";The same ER;Pass;Doan Cong Pho;12/15/25;Birth date cannot be in future
+UC01;TC10;Register without email and phone;"1. Send POST request to /api/register/
+2. Provide only password
+3. No email or phone_number
+4. Submit registration";"1. Status 400 Bad Request
+2. Error: At least email or phone required
+3. Registration rejected";The same ER;Pass;Doan Cong Pho;12/15/25;At least one identifier required
+Function 02: User Login;;;;;;;;;
+UC02;TC01;Login with email and password;"1. Send POST request to /api/login/
+2. Provide email: ""user@example.com""
+3. Provide password: ""securepass123""
+4. Submit login";"1. Status 200 OK
+2. Token returned
+3. User and profile data returned";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC02;TC02;Login with phone and password;"1. Send POST request to /api/login/
+2. Provide phone_number: ""+1234567890""
+3. Provide password: ""securepass123""
+4. Submit login";"1. Status 200 OK
+2. Token returned
+3. User and profile data returned";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC02;TC03;Login with case-insensitive email;"1. Register with ""User@Example.Com""
+2. Login with ""user@example.com"" (lowercase)
+3. Provide correct password
+4. Submit login";"1. Status 200 OK
+2. Login successful
+3. Email matching is case-insensitive";The same ER;Pass;Doan Cong Pho;12/15/25;Email normalization works
+UC02;TC04;Login returns full user info;"1. Send POST request to /api/login/
+2. Provide valid credentials
+3. Submit login";"1. Status 200 OK
+2. Returns user fields (id, email, first_name, etc.)
+3. Returns profile fields (date_of_birth, bio, etc.)
+4. Returns preferences array";The same ER;Pass;Doan Cong Pho;12/15/25;Complete user object returned
+UC02;TC05;Login with wrong password;"1. Send POST request to /api/login/
+2. Provide valid email
+3. Provide incorrect password
+4. Submit login";"1. Status 401 Unauthorized
+2. Authentication failed message
+3. No token returned";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC02;TC06;Login with non-existent user;"1. Send POST request to /api/login/
+2. Provide email not in database
+3. Provide any password
+4. Submit login";"1. Status 401 Unauthorized
+2. Authentication failed message
+3. No token returned";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC02;TC07;Login without email and phone;"1. Send POST request to /api/login/
+2. Provide only password
+3. No email or phone_number
+4. Submit login";"1. Status 400 Bad Request
+2. Validation error message
+3. Login rejected";The same ER;Pass;Doan Cong Pho;12/15/25;
+Function 03: User Logout;;;;;;;;;
+UC03;TC01;Logout with valid token;"1. Login and obtain token
+2. Send POST request to /api/logout/
+3. Include ""Authorization: Token <token>"" header
+4. Submit logout";"1. Status 204 No Content
+2. Token revoked/deleted
+3. Token no longer valid for future requests";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC03;TC02;Logout without authentication;"1. Send POST request to /api/logout/
+2. No Authorization header provided
+3. Submit logout";"1. Status 401 Unauthorized
+2. Authentication required error
+3. Logout rejected";The same ER;Pass;Doan Cong Pho;12/15/25;
+Function 04: Token Management;;;;;;;;;
+UC04;TC01;List user tokens;"1. Login and obtain token
+2. Send GET request to /api/tokens/
+3. Include Authorization header
+4. Request token list";"1. Status 200 OK
+2. Returns array of user's active tokens
+3. Each token shows key and created date";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC04;TC02;List tokens without authentication;"1. Send GET request to /api/tokens/
+2. No Authorization header
+3. Request token list";"1. Status 401 Unauthorized
+2. Authentication required error
+3. Request rejected";The same ER;Pass;Doan Cong Pho;12/15/25;
+Function 05: User Profile;;;;;;;;;
+UC05;TC01;Get user profile;"1. Login and obtain token
+2. Send GET request to /api/profile/
+3. Include Authorization header
+4. Request profile";"1. Status 200 OK
+2. Returns complete user profile
+3. Includes all profile fields";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC05;TC02;Update user profile;"1. Login and obtain token
+2. Send PUT/PATCH to /api/profile/
+3. Include updated fields (bio, gender, etc.)
+4. Submit update";"1. Status 200 OK
+2. Profile updated successfully
+3. Returns updated profile data";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC05;TC03;Get profile without authentication;"1. Send GET request to /api/profile/
+2. No Authorization header
+3. Request profile";"1. Status 401 Unauthorized
+2. Authentication required error
+3. Request rejected";The same ER;Pass;Doan Cong Pho;12/15/25;
+Function 06: Task Management;;;;;;;;;
+UC06;TC01;Create a task;"1. Login and obtain token
+2. Send POST request to /api/tasks/
+3. Provide title and description
+4. Submit task creation";"1. Status 201 Created
+2. Task created and linked to user
+3. Returns task data with id";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC06;TC02;List all user tasks;"1. Login and obtain token
+2. Create multiple tasks
+3. Send GET request to /api/tasks/
+4. Request task list";"1. Status 200 OK
+2. Returns array of user's tasks
+3. Only shows authenticated user's tasks";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC06;TC03;Get task detail;"1. Login and create a task
+2. Send GET to /api/tasks/<task_id>/
+3. Request specific task
+4. Include Authorization header";"1. Status 200 OK
+2. Returns complete task details
+3. Includes id, title, description, etc.";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC06;TC04;Update a task;"1. Login and create a task
+2. Send PUT/PATCH to /api/tasks/<task_id>/
+3. Provide updated fields
+4. Submit update";"1. Status 200 OK
+2. Task updated successfully
+3. Returns updated task data";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC06;TC05;Delete a task;"1. Login and create a task
+2. Send DELETE to /api/tasks/<task_id>/
+3. Delete the task
+4. Include Authorization header";"1. Status 204 No Content
+2. Task deleted from database
+3. Task no longer accessible";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC06;TC06;Cannot access other user's task;"1. User A creates a task
+2. User B logs in
+3. User B tries to GET /api/tasks/<task_A_id>/
+4. Request other user's task";"1. Status 404 Not Found
+2. Task not accessible
+3. Authorization enforced";The same ER;Pass;Doan Cong Pho;12/15/25;Cross-user access prevented
+Function 07: User Mode Settings;;;;;;;;;
+UC07;TC01;Get or create settings;"1. Login and obtain token
+2. Send GET request to /api/settings/
+3. Request user mode settings
+4. Include Authorization header";"1. Status 200 OK
+2. Returns settings (creates if not exist)
+3. Shows current_mode and preferences";The same ER;Pass;Doan Cong Pho;12/15/25;Auto-creation on first access
+UC07;TC02;Update mode settings;"1. Login and get existing settings
+2. Send PUT/PATCH to /api/settings/
+3. Change current_mode to ""friend"" or ""dating""
+4. Submit update";"1. Status 200 OK
+2. Settings updated successfully
+3. Returns updated settings";The same ER;Pass;Doan Cong Pho;12/15/25;
+Function 08: Match Management;;;;;;;;;
+UC08;TC01;Create a match;"1. Login as User A
+2. Send POST to /api/matches/
+3. Provide user2_id (User B)
+4. Submit match creation";"1. Status 201 Created
+2. Match created between users
+3. Chat auto-created by signal
+4. Returns match data";The same ER;Pass;Doan Cong Pho;12/15/25;Signal creates chat automatically
+UC08;TC02;List user matches;"1. Login and obtain token
+2. Create multiple matches
+3. Send GET request to /api/matches/
+4. Request match list";"1. Status 200 OK
+2. Returns array of user's matches
+3. Only shows user's own matches";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC08;TC03;Get match detail;"1. Login and create a match
+2. Send GET to /api/matches/<match_id>/
+3. Request specific match
+4. Include Authorization header";"1. Status 200 OK
+2. Returns complete match details
+3. Includes user1, user2, status, ratings";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC08;TC04;Update match status;"1. Login and create a match
+2. Send PUT/PATCH to /api/matches/<match_id>/
+3. Update status and ratings
+4. Submit update";"1. Status 200 OK
+2. Match updated successfully
+3. Returns updated match data";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC08;TC05;Match with specific user;"1. Login as User A
+2. Send PUT to /api/matches/with/<user_B_id>/
+3. Create match with specific user
+4. Include Authorization header";"1. Status 200 OK
+2. Match created with specified user
+3. Returns match data";The same ER;Pass;Doan Cong Pho;12/15/25;Custom endpoint for matching
+UC08;TC06;Cannot match with self;"1. Login and obtain token
+2. Send POST to /api/matches/
+3. Provide own user_id as user2_id
+4. Attempt self-match";"1. Status 400 Bad Request
+2. Validation error message
+3. Self-matching prevented";The same ER;Pass;Doan Cong Pho;12/15/25;Business rule enforced
+Function 09: Quest Management;;;;;;;;;
+UC09;TC01;Create a quest;"1. Login and create a match
+2. Send POST to /api/quests/
+3. Provide match_id, location, activity, quest_date
+4. Submit quest creation";"1. Status 201 Created
+2. Quest created for match
+3. Returns quest data with id";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC09;TC02;List user quests;"1. Login and create matches with quests
+2. Send GET request to /api/quests/
+3. Request quest list
+4. Include Authorization header";"1. Status 200 OK
+2. Returns array of quests for user's matches
+3. Only shows relevant quests";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC09;TC03;Update a quest;"1. Login and create a quest
+2. Send PUT/PATCH to /api/quests/<quest_id>/
+3. Update location, activity, or date
+4. Submit update";"1. Status 200 OK
+2. Quest updated successfully
+3. Returns updated quest data";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC09;TC04;Delete a quest;"1. Login and create a quest
+2. Send DELETE to /api/quests/<quest_id>/
+3. Delete the quest
+4. Include Authorization header";"1. Status 204 No Content
+2. Quest deleted from database
+3. Quest no longer accessible";The same ER;Pass;Doan Cong Pho;12/15/25;
+Function 10: Chat and Messaging;;;;;;;;;
+UC10;TC01;Chat auto-created with match;"1. Login and create a match
+2. Check for auto-created chat
+3. Send GET to /api/chats/
+4. Verify chat exists";"1. Status 200 OK
+2. Chat automatically created by signal
+3. Chat linked to match";The same ER;Pass;Doan Cong Pho;12/15/25;Django signal creates chat
+UC10;TC02;List user chats;"1. Login and create multiple matches
+2. Send GET request to /api/chats/
+3. Request chat list
+4. Include Authorization header";"1. Status 200 OK
+2. Returns array of user's chats
+3. Only shows user's own chats";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC10;TC03;Get chat detail;"1. Login and create a match
+2. Send GET to /api/chats/<chat_id>/
+3. Request specific chat
+4. Include Authorization header";"1. Status 200 OK
+2. Returns complete chat details
+3. Includes match information";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC10;TC04;Send a message;"1. Login and get a chat
+2. Send POST to /api/chats/<chat_id>/messages/
+3. Provide message content
+4. Submit message";"1. Status 201 Created
+2. Message saved to database
+3. Returns message data with timestamp";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC10;TC05;List messages in chat;"1. Login and send multiple messages
+2. Send GET to /api/chats/<chat_id>/messages/
+3. Request message list
+4. Include Authorization header";"1. Status 200 OK
+2. Returns array of messages
+3. Messages in chat";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC10;TC06;Messages ordered by timestamp;"1. Login and send multiple messages
+2. Send messages at different times
+3. GET /api/chats/<chat_id>/messages/
+4. Check ordering";"1. Status 200 OK
+2. Messages ordered by sent_at
+3. Chronological order maintained";The same ER;Pass;Doan Cong Pho;12/15/25;Proper ordering enforced
+UC10;TC07;Cannot send to other user's chat;"1. User A creates a chat
+2. User B logs in
+3. User B tries POST to User A's chat
+4. Attempt unauthorized message";"1. Status 404 Not Found
+2. Message rejected
+3. Authorization enforced";The same ER;Pass;Doan Cong Pho;12/15/25;Cross-user access prevented
+Function 11: Preference Management;;;;;;;;;
+UC11;TC01;List all preferences;"1. Send GET request to /api/preferences/
+2. Request preference list
+3. No authentication required
+4. Access public endpoint";"1. Status 200 OK
+2. Returns array of all preferences
+3. Ordered by name";The same ER;Pass;Doan Cong Pho;12/15/25;Public endpoint
+UC11;TC02;Create a preference;"1. Send POST to /api/preferences/
+2. Provide name and description
+3. Create new preference category
+4. Submit creation";"1. Status 201 Created
+2. Preference created in database
+3. Returns preference data with id";The same ER;Pass;Doan Cong Pho;12/15/25;Admin function
+UC11;TC03;Add preference to user;"1. Login and obtain token
+2. Send POST to /api/user-preferences/
+3. Provide preference_id
+4. Submit association";"1. Status 201 Created
+2. Preference linked to user
+3. Returns nested preference data";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC11;TC04;List user preferences;"1. Login and add preferences
+2. Send GET to /api/user-preferences/
+3. Request user's preferences
+4. Include Authorization header";"1. Status 200 OK
+2. Returns array of user's preferences
+3. Includes nested preference objects";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC11;TC05;Remove preference from user;"1. Login and add a preference
+2. Send DELETE to /api/user-preferences/<pref_id>/
+3. Remove preference
+4. Include Authorization header";"1. Status 204 No Content
+2. Preference removed from user
+3. Association deleted";The same ER;Pass;Doan Cong Pho;12/15/25;
+UC11;TC06;Cannot add duplicate preference;"1. Login and add preference with id=1
+2. Try to add same preference again
+3. POST to /api/user-preferences/
+4. Provide same preference_id";"1. Status 400 Bad Request
+2. Duplicate validation error
+3. Association rejected";The same ER;Pass;Doan Cong Pho;12/15/25;Unique constraint enforced
+Function 12: WebSocket Chat;;;;;;;;;
+UC12;TC01;Connect to WebSocket;"1. Authenticate user and get token
+2. Connect to ws://localhost:8000/ws/chat/<chat_id>/
+3. Include token in connection
+4. Establish WebSocket connection";"1. Connection accepted
+2. WebSocket channel established
+3. Ready to send/receive messages";Not Tested;Doan Cong Pho;12/15/25;Requires Daphne server
+UC12;TC02;Send real-time message;"1. Connect to WebSocket chat
+2. Send message through WebSocket
+3. Message broadcast to channel
+4. Verify delivery";"1. Message sent successfully
+2. All connected users receive message
+3. Real-time delivery confirmed";Not Tested;Doan Cong Pho;12/15/25;Requires WebSocket testing
+UC12;TC03;Receive real-time message;"1. Connect two users to same chat
+2. User A sends message
+3. User B receives in real-time
+4. Verify instant delivery";"1. Message delivered instantly
+2. No polling required
+3. WebSocket push notification";Not Tested;Doan Cong Pho;12/15/25;Requires WebSocket testing
+Function 13: Security & Authorization;;;;;;;;;
+UC13;TC01;Access protected endpoint without token;"1. Send request to protected endpoint
+2. No Authorization header
+3. Try to access resource
+4. Submit request";"1. Status 401 Unauthorized
+2. Authentication required error
+3. Access denied";Pass;Doan Cong Pho;12/15/25;Applied to all protected endpoints
+UC13;TC02;Access with invalid token;"1. Send request with Authorization header
+2. Provide invalid/expired token
+3. Try to access resource
+4. Submit request";"1. Status 401 Unauthorized
+2. Invalid token error
+3. Access denied";Pass;Doan Cong Pho;12/15/25;Token validation works
+UC13;TC03;SQL injection prevention;"1. Send login request
+2. Provide SQL injection in email: ""' OR '1'='1""
+3. Include password
+4. Submit login";"1. Status 401 Unauthorized
+2. SQL injection prevented
+3. No data breach";Pass;Doan Cong Pho;12/15/25;Django ORM protects against SQL injection
+UC13;TC04;XSS prevention in messages;"1. Login and access chat
+2. Send message with script: ""<script>alert('XSS')</script>""
+3. Save message
+4. Retrieve message";"1. Message saved
+2. Script tags escaped/sanitized
+3. XSS prevented";Pass;Doan Cong Pho;12/15/25;Frontend should sanitize
+Function 14: Database Integrity;;;;;;;;;
+UC14;TC01;Unique email constraint;"1. Create user with email
+2. Try to create another user with same email
+3. Via direct DB or API
+4. Attempt duplicate";"1. Constraint violation error
+2. Duplicate prevented
+3. Data integrity maintained";Pass;Doan Cong Pho;12/15/25;Database constraint enforced
+UC14;TC02;Unique phone constraint;"1. Create user with phone
+2. Try to create another user with same phone
+3. Via direct DB or API
+4. Attempt duplicate";"1. Constraint violation error
+2. Duplicate prevented
+3. Data integrity maintained";Pass;Doan Cong Pho;12/15/25;Database constraint enforced
+UC14;TC03;Cascade deletion;"1. Create user with profile, tasks, matches
+2. Delete the user
+3. Check related objects
+4. Verify cascade";"1. User deleted
+2. Related profile deleted
+3. Related tasks/matches deleted
+4. Cascade works correctly";Pass;Doan Cong Pho;12/15/25;ForeignKey on_delete=CASCADE
+UC14;TC04;Unique chat per match;"1. Create a match
+2. Try to create multiple chats for same match
+3. Attempt duplicate
+4. Test unique constraint";"1. Only one chat per match
+2. Duplicate prevented
+3. Unique constraint enforced";Pass;Doan Cong Pho;12/15/25;Signal and constraint work together
+Function 15: API Documentation;;;;;;;;;
+UC15;TC01;Access Swagger UI;"1. Navigate to /api/schema/swagger-ui/
+2. Open in browser
+3. View API documentation
+4. Check endpoints";"1. Swagger UI loads
+2. All endpoints listed
+3. Request/response schemas shown
+4. Interactive testing available";Pass;Doan Cong Pho;12/15/25;drf-spectacular integration
+UC15;TC02;Access ReDoc;"1. Navigate to /api/schema/redoc/
+2. Open in browser
+3. View API documentation
+4. Check documentation format";"1. ReDoc UI loads
+2. All endpoints documented
+3. Clean, readable format
+4. Search functionality works";Pass;Doan Cong Pho;12/15/25;Alternative documentation view
+UC15;TC03;Download OpenAPI schema;"1. Navigate to /api/schema/
+2. Download schema JSON/YAML
+3. Save schema file
+4. Verify completeness";"1. Schema file downloaded
+2. Valid OpenAPI 3.0 format
+3. All endpoints included
+4. Can import to tools";Pass;Doan Cong Pho;12/15/25;Machine-readable API spec

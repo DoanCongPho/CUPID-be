@@ -69,6 +69,8 @@ class Quests(models.Model):
         related_name="quests",
     )
     location_name = models.CharField(max_length=255, blank=True)
+    hint_user1 = models.CharField(max_length=255, blank=True, default="")
+    hint_user2 = models.CharField(max_length=255, blank=True, default="")
     activity = models.CharField(max_length=255)
     quest_date = models.DateField()
     location_latitude = models.DecimalField(

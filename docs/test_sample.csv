@@ -1,0 +1,37 @@
+﻿Function/Feature ID;Case ID;Test case name;Test step;Expected Result (ER);Actual Result;Status;Tester;Tested Date;Remark
+Function 01: Login as admin;;;;;;;;;
+UC01;UI01;Log in with correct username and password;"1. Enter User Name: ""abcd ""
+2.Enter Password: ""abcd""
+3. Click ""Ok"" button";"1. Authenticated
+2. A welcome message will  be displayed";The same ER;Pass;HTThanh;4/6/13;
+UC01;UI02;Log in with incorrect username;"1. Enter User Name: ""abcx""
+2. Enter Password: ""abcx""
+3. Click ""Ok"" button";"1. Unauthenticated
+2. A wrong user-account notice will  be displayed";"1. Unauthenticated
+2. No notice is shown";Fail;NKHuy;4/6/13;
+UC01;UI03;Login with blank User name and Password;"1. Enter User Name: "" ""
+2. Enter Password: "" ""
+3. Click ""Ok"" button";"1. Disallows the user to proceed and
+2. The error message should be displayed";"1. Disallows the user to proceed and
+2. The error message should be displayed";Pass;NKHuy;4/6/13;
+UC01;UI04;Login with Special characters of User name and Password;"1. Enter User Name: "" 'or'$'='$' ""
+2. Enter Password: ""  'or'$'='$'  ""
+. Click ""Ok"" button";"1. Disallows the user to proceed and
+2. The error message should be displayed";"1. Disallows the user to proceed and
+2. The error message should be displayed";Fail;HTThanh;4/6/13;
+Function 02: Login as end user;;;;;;;;;
+UC02;UI01;Login with blank User name;"1. Enter User Name: "" ""
+2.Enter Password: ""abcd""
+3. Click ""Ok"" button";"1. Disallows the user to proceed and
+2. The error message should be displayed";"1. Allows the user to proceed and
+2. The error message is not displayed";Fail;TDHoang;4/6/13;
+UC02;UI02;Login with blank Password;"1. Enter User Name: ""abcd ""
+2. Enter Password: "" ""
+3. Click ""Ok"" button";"1. Disallows the user to proceed and
+2. The error message should be displayed";"1. Disallows the user to proceed and
+2. The error message should be displayed";Pass;TDHoang;4/6/13;
+UC02;UI03;Login with blank User name and Password;"1. Enter User Name: "" ""
+2. Enter Password: "" ""
+3. Click ""Ok"" button";"1. Disallows the user to proceed and
+2. The error message should be displayed";"1. Disallows the user to proceed and
+2. The error message should be displayed";Pass;TDHoang;4/7/13;

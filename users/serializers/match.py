@@ -79,6 +79,8 @@ class QuestSerializer(serializers.ModelSerializer):
             "activity",
             "location_latitude",
             "location_longitude",
+            "hint_user1",
+            "hint_user2",
             "quest_date",
             "status",
             "xp_reward",
