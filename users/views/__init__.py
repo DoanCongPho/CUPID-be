@@ -37,8 +37,8 @@ from .match import (
     QuestDetailView,
     QuestPostHintView,
     MatchRateView,
-    SingleUserMatchView
-
+    SingleUserMatchView,
+    GenQuestView,
 )
 
 # Chat and message views
@@ -80,6 +80,7 @@ __all__ = [
     "QuestPostHintView",
     "MatchRateView",
     "SingleUserMatchView",
+    "GenQuestView",
     # Chat & Message
     "ChatListCreateView",
     "ChatDetailView",

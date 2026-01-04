@@ -15,6 +15,7 @@ class Match(models.Model):
     STATUS_USER2_MISSED = "user2_missed"
     STATUS_EXPIRED = "expired"
 
+
     STATUS_CHOICES = [
         (STATUS_SUCCESSFUL, "Successful"),
         (STATUS_USER1_MISSED, "User 1 Missed"),
@@ -63,7 +64,7 @@ class Quests(models.Model):
         (STATUS_COMPLETED, "Completed"),
     ]
 
-    match = models.OneToOneField(
+    match = models.ForeignKey(
         Match,
         on_delete=models.CASCADE,
         related_name="quests",
@@ -100,6 +101,7 @@ class Quests(models.Model):
         indexes = [
             models.Index(fields=["quest_date"]),
         ]
+        unique_together = ('match', 'location_name')
 
     def __str__(self):
         return f"Quest {self.pk} for match {self.match_id} ({self.status})"

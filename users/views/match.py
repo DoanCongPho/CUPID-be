@@ -13,8 +13,95 @@ from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiResp
 from ..models import Match, Quests, UserPreference, UserProfile
 from ..serializers.match import MatchSerializer, QuestSerializer
 from engine import DatingEngine
-User = get_user_model()
+from engine_gen_quest import gen_quests_for_matches
+import json
 
+User = get_user_model()
+PLACES_PATH = "places.json"
+
+
+@extend_schema_view(
+    post=extend_schema(
+        description="Generate quests for all matches. Only admin or staff should use this endpoint.",
+        responses={
+            200: OpenApiResponse(
+                description="Number of quests created and list of created quests",
+                response={
+                    "type": "object",
+                    "properties": {
+                        "created_quests": {"type": "integer"},
+                        "quests": {"type": "array", "items": {"type": "object"}}
+                    }
+                }
+            )
+        }
+    )
+)
+class GenQuestView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        from ..models.task import Task
+        print("[GenQuestView] Start generating quests...")
+        with open(PLACES_PATH, encoding='utf-8') as f:
+            places = json.load(f)
+        print(f"[GenQuestView] Loaded {len(places)} places.")
+        matches = Match.objects.all()
+        print(f"[GenQuestView] Found {matches.count()} matches.")
+        user_profiles = {p.user_id: p for p in UserProfile.objects.all()}
+        print(f"[GenQuestView] Loaded {len(user_profiles)} user profiles.")
+        tasks = {}
+        all_tasks = Task.objects.all()
+        print(f"[GenQuestView] Loaded {all_tasks.count()} tasks.")
+        for t in all_tasks:
+            if t.user_id not in tasks:
+                tasks[t.user_id] = []
+            if t.scheduled_start_time and t.scheduled_end_time:
+                tasks[t.user_id].append((
+                    t.scheduled_start_time.strftime("%H:%M"),
+                    t.scheduled_end_time.strftime("%H:%M")
+                ))
+        print(f"[GenQuestView] Compiled constraints for {len(tasks)} users.")
+        quest_infos = gen_quests_for_matches(matches, user_profiles, tasks, places)
+        print(f"[GenQuestView] Generated quest info for {len(quest_infos)} matches.")
+        created = 0
+        created_quests = []
+        for idx, info in enumerate(quest_infos):
+            if not info:
+                print(f"[GenQuestView] Quest info {idx} is None, skipping.")
+                continue
+            match = info["match"]
+            # Chỉ skip nếu quest cho match và location_name này đã tồn tại
+            if Quests.objects.filter(match=match, location_name=info["location_name"]).exists():
+                print(f"[GenQuestView] Quest for match {match.id} at {info['location_name']} already exists, skipping.")
+                continue
+            quest = Quests.objects.create(
+                match=match,
+                location_name=info["location_name"],
+                activity=info["activity"],
+                quest_date=timezone.now().date(),
+                location_latitude=info["location_latitude"],
+                location_longitude=info["location_longitude"],
+                status=Quests.STATUS_PENDING,
+                xp_reward=info["xp_reward"],
+            )
+            created_quests.append({
+                "id": quest.id,
+                "match_id": match.id,
+                "location_name": quest.location_name,
+                "activity": quest.activity,
+                "quest_date": str(quest.quest_date),
+                "location_latitude": quest.location_latitude,
+                "location_longitude": quest.location_longitude,
+                "status": quest.status,
+                "xp_reward": quest.xp_reward,
+                "time_start": info.get("time_start"),
+                "time_end": info.get("time_end"),
+            })
+            print(f"[GenQuestView] Created quest {quest.id} for match {match.id}.")
+            created += 1
+        print(f"[GenQuestView] Finished. Created {created} quests.")
+        return Response({"created_quests": created, "quests": created_quests}, status=200)
 
 @extend_schema_view(
     get=extend_schema(responses=MatchSerializer(many=True)),

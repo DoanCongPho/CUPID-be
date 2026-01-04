@@ -1,4 +1,4 @@
-from django.urls import path
+from django.urls import path, include
 from .views import (
     # Authentication
     RegisterView,
@@ -21,6 +21,7 @@ from .views import (
     QuestPostHintView,
     MatchRateView,
     SingleUserMatchView,
+    GenQuestView,
     # Chats & Messages
     ChatListCreateView,
     ChatDetailView,
@@ -58,4 +59,5 @@ urlpatterns = [
     path('preferences/', PreferenceListCreateView.as_view(), name='preference-list-create'),
     path('user-preferences/', UserPreferenceListCreateView.as_view(), name='user-preference-list-create'),
     path('user-preferences/<int:pref_id>/', UserPreferenceDestroyView.as_view(), name='user-preference-destroy'),
+    path('gen-quests/', GenQuestView.as_view(), name='gen-quests'),
 ]
