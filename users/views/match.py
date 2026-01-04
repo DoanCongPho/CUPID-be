@@ -341,6 +341,14 @@ class SingleUserMatchView(APIView):
                 if not Match.objects.filter(user1_id=male_id, user2_id=female_id).exists() and not Match.objects.filter(user1_id=female_id, user2_id=male_id).exists():
                     match = Match.objects.create(user1_id=male_id, user2_id=female_id, status=Match.STATUS_SUCCESSFUL, matched_at=timezone.now())
                     created_matches.append(match.id)
+                    # Update is_matched for both profiles
+                    for uid in [male_id, female_id]:
+                        try:
+                            profile = UserProfile.objects.get(user_id=uid)
+                            profile.is_matched = True
+                            profile.save()
+                        except UserProfile.DoesNotExist:
+                            pass
         response = {
             "total_pairs": len(optimal_pairs),
             "total_similarity_score": round(total_score, 4),
