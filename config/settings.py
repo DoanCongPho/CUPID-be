@@ -158,6 +158,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
 AUTH0_AUDIENCE = os.getenv("AUTH0_AUDIENCE")
 
+# Supabase settings
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
 # REST Framework configuration: use Auth0 JWT auth first, then Session (so admin/browser still works)
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [

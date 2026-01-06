@@ -31,6 +31,8 @@ from .views import (
     PreferenceListCreateView,
     UserPreferenceListCreateView,
     UserPreferenceDestroyView,
+    # Avatar Upload
+    UserAvatarUploadView,
 )
 
 urlpatterns = [
@@ -60,4 +62,5 @@ urlpatterns = [
     path('user-preferences/', UserPreferenceListCreateView.as_view(), name='user-preference-list-create'),
     path('user-preferences/<int:pref_id>/', UserPreferenceDestroyView.as_view(), name='user-preference-destroy'),
     path('gen-quests/', GenQuestView.as_view(), name='gen-quests'),
+    path("profile/upload-avatar/", UserAvatarUploadView.as_view(), name="upload-avatar"),
 ]
