@@ -2,11 +2,16 @@
 Preference views for the users app.
 """
 from rest_framework import generics, permissions
+from rest_framework.views import APIView
+from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema_view, extend_schema, OpenApiResponse
 
 from ..models import Preference, UserPreference
 from ..serializers.preference import PreferenceSerializer, UserPreferenceSerializer
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 
 @extend_schema_view(
@@ -44,3 +49,22 @@ class UserPreferenceDestroyView(generics.DestroyAPIView):
     def get_object(self):
         pref_id = self.kwargs.get("pref_id")
         return get_object_or_404(UserPreference, user=self.request.user, preference_id=pref_id)
+
+
+@extend_schema(
+    responses=UserPreferenceSerializer(many=True),
+    description="Get user preferences by user_id. Returns all preferences for the specified user."
+)
+class UserPreferenceByUserView(generics.ListAPIView):
+    """
+    API endpoint to retrieve all preferences for a specific user by user_id.
+    - Authenticated users can view preferences of any user.
+    - Returns a list of UserPreference objects.
+    """
+    serializer_class = UserPreferenceSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user_id = self.kwargs.get("user_id")
+        user = get_object_or_404(User, pk=user_id)
+        return UserPreference.objects.filter(user=user).select_related("preference").order_by("created_at")

@@ -58,6 +58,7 @@ from .preference import (
     PreferenceListCreateView,
     UserPreferenceListCreateView,
     UserPreferenceDestroyView,
+    UserPreferenceByUserView,
 )
 
 
@@ -95,4 +96,5 @@ __all__ = [
     "PreferenceListCreateView",
     "UserPreferenceListCreateView",
     "UserPreferenceDestroyView",
+    "UserPreferenceByUserView",
 ]
