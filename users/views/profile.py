@@ -14,7 +14,7 @@ from supabase import create_client
 import uuid
 
 from ..serializers.profile import UserProfileSerializer
-from ..models import Match
+from ..models import Match, UserProfile
 
 User = get_user_model()
 
@@ -61,7 +61,13 @@ class UserPublicProfileView(APIView):
             )
 
         # Get and return the profile
-        profile = get_object_or_404(target_user.profile)
+        try:
+            profile = target_user.profile
+        except UserProfile.DoesNotExist:
+            return Response(
+                {"detail": "User profile not found."},
+                status=status.HTTP_404_NOT_FOUND
+            )
         serializer = UserProfileSerializer(profile)
         return Response(serializer.data)
 
