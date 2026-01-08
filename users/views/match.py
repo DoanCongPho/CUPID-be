@@ -82,7 +82,8 @@ class GenQuestView(APIView):
                 quest_date=timezone.now().date(),
                 location_latitude=info["location_latitude"],
                 location_longitude=info["location_longitude"],
-                status=Quests.STATUS_PENDING,
+                status_user1=Quests.STATUS_PENDING,
+                status_user2=Quests.STATUS_PENDING,
                 xp_reward=info["xp_reward"],
             )
             created_quests.append({
@@ -93,7 +94,8 @@ class GenQuestView(APIView):
                 "quest_date": str(quest.quest_date),
                 "location_latitude": quest.location_latitude,
                 "location_longitude": quest.location_longitude,
-                "status": quest.status,
+                "status_user1": quest.status_user1,
+                "status_user2": quest.status_user2,
                 "xp_reward": quest.xp_reward,
                 "time_start": info.get("time_start"),
                 "time_end": info.get("time_end"),
@@ -247,6 +249,99 @@ class QuestPostHintView(APIView):
 
 @extend_schema_view(
     post=extend_schema(
+        request=None,
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'quest': {'type': 'object'},
+                    'xp_awarded': {'type': 'boolean'},
+                    'xp_amount': {'type': 'integer'}
+                }
+            }
+        },
+        description="Mark a quest as completed for the authenticated user. If both users complete the quest, XP is awarded and the quest is deleted."
+    )
+)
+class QuestCompleteView(APIView):
+    """
+    Mark a quest as completed for the authenticated user.
+    When both users complete the quest:
+    - XP is awarded to both users
+    - Quest is deleted
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        quest = get_object_or_404(Quests, pk=pk)
+        user = request.user
+        match = quest.match
+
+        # Check if user is participant
+        if match.user1 != user and match.user2 != user:
+            return Response(
+                {"detail": "You are not a participant in this quest's match."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Update the appropriate user status
+        if match.user1 == user:
+            if quest.status_user1 == Quests.STATUS_COMPLETED:
+                return Response({"detail": "You have already completed this quest."}, status=status.HTTP_400_BAD_REQUEST)
+            quest.status_user1 = Quests.STATUS_COMPLETED
+        elif match.user2 == user:
+            if quest.status_user2 == Quests.STATUS_COMPLETED:
+                return Response({"detail": "You have already completed this quest."}, status=status.HTTP_400_BAD_REQUEST)
+            quest.status_user2 = Quests.STATUS_COMPLETED
+
+        quest.save()
+
+        # Check if both users have completed the quest
+        xp_awarded = False
+        xp_amount = 0
+        if quest.status_user1 == Quests.STATUS_COMPLETED and quest.status_user2 == Quests.STATUS_COMPLETED:
+            # Award XP to both users
+            xp_amount = quest.xp_reward or 0
+            try:
+                profile1 = match.user1.profile
+                profile1.total_xp += xp_amount
+                profile1.save()
+            except UserProfile.DoesNotExist:
+                pass
+
+            try:
+                profile2 = match.user2.profile
+                profile2.total_xp += xp_amount
+                profile2.save()
+            except UserProfile.DoesNotExist:
+                pass
+
+            xp_awarded = True
+
+            # Delete the quest
+            # quest_data = QuestSerializer(quest).data
+            # quest.delete()
+
+            return Response({
+                "message": "Quest completed by both users! XP awarded and quest removed.",
+                "quest": serializer.data,
+                "xp_awarded": True,
+                "xp_amount": xp_amount
+            }, status=status.HTTP_200_OK)
+
+        # Only one user has completed so far
+        serializer = QuestSerializer(quest)
+        return Response({
+            "message": "Quest marked as completed. Waiting for your partner to complete.",
+            "quest": serializer.data,
+            "xp_awarded": False,
+            "xp_amount": 0
+        }, status=status.HTTP_200_OK)
+
+
+@extend_schema_view(
+    post=extend_schema(
         request={
             "application/json": {
                 "type": "object",
@@ -339,7 +434,13 @@ class SingleUserMatchView(APIView):
                 female_id = pair["female_id"]
                 # Check if match already exists
                 if not Match.objects.filter(user1_id=male_id, user2_id=female_id).exists() and not Match.objects.filter(user1_id=female_id, user2_id=male_id).exists():
-                    match = Match.objects.create(user1_id=male_id, user2_id=female_id, status=Match.STATUS_SUCCESSFUL, matched_at=timezone.now())
+                    match = Match.objects.create(
+                        user1_id=male_id,
+                        user2_id=female_id,
+                        status_user1=Match.STATUS_PENDING,
+                        status_user2=Match.STATUS_PENDING,
+                        matched_at=timezone.now()
+                    )
                     created_matches.append(match.id)
                     # Update is_matched for both profiles
                     for uid in [male_id, female_id]:
@@ -363,3 +464,68 @@ class SingleUserMatchView(APIView):
             "created_matches": created_matches
         }
         return Response(response, status=status.HTTP_200_OK)
+
+@extend_schema_view(
+    post=extend_schema(
+        request=None,
+        responses={
+            200: {
+                'type': 'object',
+                'properties': {
+                    'message': {'type': 'string'},
+                    'match': {'type': 'object'},
+                    'both_confirmed': {'type': 'boolean'}
+                }
+            }
+        },
+        description="Confirm a match for the authenticated user. When both users confirm, the match is fully completed."
+    )
+)
+class MatchConfirmView(APIView):
+    """
+    Confirm a match for the authenticated user.
+    When both users confirm, the match status becomes fully completed.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        match = get_object_or_404(Match, pk=pk)
+        user = request.user
+
+        # Check if user is participant
+        if match.user1 != user and match.user2 != user:
+            return Response(
+                {"detail": "You are not a participant in this match."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        # Update the appropriate user status
+        if match.user1 == user:
+            if match.status_user1 == Match.STATUS_COMPLETED:
+                return Response({"detail": "You have already confirmed this match."}, status=status.HTTP_400_BAD_REQUEST)
+            match.status_user1 = Match.STATUS_COMPLETED
+        elif match.user2 == user:
+            if match.status_user2 == Match.STATUS_COMPLETED:
+                return Response({"detail": "You have already confirmed this match."}, status=status.HTTP_400_BAD_REQUEST)
+            match.status_user2 = Match.STATUS_COMPLETED
+
+        match.save()
+
+        # Check if both users have confirmed
+        both_confirmed = (match.status_user1 == Match.STATUS_COMPLETED and
+                         match.status_user2 == Match.STATUS_COMPLETED)
+
+        serializer = MatchSerializer(match)
+
+        if both_confirmed:
+            return Response({
+                "message": "Both users have confirmed the match! Match is now fully completed.",
+                "match": serializer.data,
+                "both_confirmed": True
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({
+                "message": "Match confirmed. Waiting for your partner to confirm.",
+                "match": serializer.data,
+                "both_confirmed": False
+            }, status=status.HTTP_200_OK)

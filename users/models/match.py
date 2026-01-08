@@ -9,18 +9,14 @@ from django.utils.translation import gettext_lazy as _
 class Match(models.Model):
     """
     Represents a match between two users.
+    Each user has their own status for tracking quest completion.
     """
-    STATUS_SUCCESSFUL = "successful"
-    STATUS_USER1_MISSED = "user1_missed"
-    STATUS_USER2_MISSED = "user2_missed"
-    STATUS_EXPIRED = "expired"
-
+    STATUS_PENDING = "pending"
+    STATUS_COMPLETED = "completed"
 
     STATUS_CHOICES = [
-        (STATUS_SUCCESSFUL, "Successful"),
-        (STATUS_USER1_MISSED, "User 1 Missed"),
-        (STATUS_USER2_MISSED, "User 2 Missed"),
-        (STATUS_EXPIRED, "Expired"),
+        (STATUS_PENDING, "Pending"),
+        (STATUS_COMPLETED, "Completed"),
     ]
 
     user1 = models.ForeignKey(
@@ -33,10 +29,15 @@ class Match(models.Model):
         related_name="matches_as_user2",
         on_delete=models.CASCADE,
     )
-    status = models.CharField(
+    status_user1 = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
-        default=STATUS_SUCCESSFUL
+        default=STATUS_PENDING
+    )
+    status_user2 = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING
     )
     matched_at = models.DateTimeField(null=True, blank=True)
     user1_rating = models.IntegerField(null=True, blank=True)
@@ -56,6 +57,7 @@ class Match(models.Model):
 class Quests(models.Model):
     """
     Quest activities associated with matches.
+    Both users must complete the quest to get XP rewards.
     """
     STATUS_PENDING = "pending"
     STATUS_COMPLETED = "completed"
@@ -86,7 +88,12 @@ class Quests(models.Model):
         null=True,
         blank=True
     )
-    status = models.CharField(
+    status_user1 = models.CharField(
+        max_length=10,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING
+    )
+    status_user2 = models.CharField(
         max_length=10,
         choices=STATUS_CHOICES,
         default=STATUS_PENDING
