@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Cupid API Index</title>
+  <style>
+    body{font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; color:#222}
+    .container{max-width:900px;margin:40px auto;padding:20px;border:1px solid #eee;border-radius:8px}
+    h1{font-size:24px;margin-bottom:8px}
+    p.lead{color:#666}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th,td{padding:8px;border-bottom:1px solid #efefef;text-align:left}
+    th{background:#fafafa;color:#333;font-weight:600}
+    code{background:#f7f7f7;padding:4px 6px;border-radius:4px}
+    .small{font-size:0.9rem;color:#666}
+    a.button{display:inline-block;padding:8px 12px;background:#0b5cff;color:#fff;border-radius:6px;text-decoration:none}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Cupid API</h1>
+    <p class="lead">Simple developer index for frontend team — shows available endpoints and quick test form.</p>
+
+    <!-- Documentation links -->
+    <p style="margin-top:10px">
+      <a class="button" href="/api/schema/" target="_blank">OpenAPI JSON</a>
+      <a class="button" href="/api/docs/swagger/" style="margin-left:8px" target="_blank">Swagger UI</a>
+      <a class="button" href="/api/docs/redoc/" style="margin-left:8px" target="_blank">Redoc</a>
+      <a class="button" href="/api/chat_ws_test.html" style="margin-left:8px" target="_blank">Test chatting func</a>
+    </p>
+
+    <table>
+      <thead>
+        <tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>/api/profile/</code></td><td>GET, PUT</td><td>User profile retrieve/update</td></tr>
+        <tr><td><code>/api/auth/register/</code></td><td>POST</td><td>Create account</td></tr>
+        <tr><td><code>/api/auth/login/</code></td><td>POST</td><td>Login and get token</td></tr>
+        <tr><td><code>/api/auth/logout/</code></td><td>POST</td><td>Logout</td></tr>
+        <tr><td><code>/api/auth/tokens/</code></td><td>GET</td><td>List user tokens</td></tr>
+        <tr><td><code>/api/tasks/</code></td><td>GET, POST</td><td>List/create tasks</td></tr>
+        <tr><td><code>/api/tasks/&lt;id&gt;/</code></td><td>GET, PUT, DELETE</td><td>Task detail</td></tr>
+        <tr><td><code>/api/settings/</code></td><td>GET, PUT</td><td>User mode settings</td></tr>
+      </tbody>
+    </table>
+
+    <p class="small">Use the quick test form below to try GET /api/profile/ (requires Authorization header)</p>
+
+    <form id="testForm">
+      <label>Authorization (Bearer token)</label><br>
+      <input id="auth" name="auth" style="width:100%;padding:8px;margin-top:6px;margin-bottom:10px" placeholder="Bearer ey...">
+      <button class="button" type="button" onclick="runTest()">GET /api/profile/</button>
+    </form>
+
+    <h3>Result</h3>
+    <pre id="result" style="background:#fafafa;padding:12px;border-radius:6px;min-height:120px"></pre>
+
+  </div>
+  <script>
+    async function runTest(){
+      const token = document.getElementById('auth').value.trim();
+      const headers = {};
+      if(token) headers['Authorization'] = token;
+      document.getElementById('result').textContent = 'Loading...';
+      try{
+        const r = await fetch('/api/profile/', { headers });
+        const text = await r.text();
+        document.getElementById('result').textContent = r.status + '\n' + text;
+      }catch(e){ document.getElementById('result').textContent = e.toString(); }
+    }
+  </script>
+</body>
+</html>

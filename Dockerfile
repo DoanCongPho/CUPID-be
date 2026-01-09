@@ -26,7 +26,6 @@ RUN poetry config virtualenvs.create false && poetry install --no-root
 RUN apt-get update && apt-get install -y \
     build-essential \
     pkg-config \
-    default-libmysqlclient-dev \
     python3-dev \
     --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*

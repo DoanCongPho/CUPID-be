@@ -3,8 +3,8 @@
 import os
 import sys
 from pathlib import Path
-
 from dotenv import load_dotenv
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -12,22 +12,16 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load .env file
 load_dotenv(BASE_DIR / ".env")
 
-# Quick-start development settings...
-SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-secret")
-DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
-
-ALLOWED_HOSTS = []
-
-
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# This code is correct. It reads from the environment.
 SECRET_KEY = os.environ.get("SECRET_KEY", "fallback-secret")
 DEBUG = os.environ.get("DEBUG", "False").lower() in ("true", "1", "t")
 
 ALLOWED_HOSTS = []
 
+# ALLOWED_HOSTS: comma-separated in .env, or empty list for local dev
+ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h.strip()]
 
 # Application definition
 
@@ -38,7 +32,14 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "rest_framework",
+    "drf_spectacular",
+    "users.apps.UsersConfig",
+    # channels for websockets / realtime
+    "channels",
 ]
+
+AUTH_USER_MODEL = "users.User"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -55,7 +56,7 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [BASE_DIR / "templates"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -69,6 +70,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "config.wsgi.application"
 
+# ASGI application for Channels
+ASGI_APPLICATION = "config.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
@@ -76,11 +79,8 @@ WSGI_APPLICATION = "config.wsgi.application"
 
 # ... (BASE_DIR của bạn ở trên này) ...
 
-# Kiểm tra xem biến 'DB_HOST' có được Docker cung cấp hay không
-# os.environ.get('DB_HOST') sẽ trả về 'db' (trong Docker) hoặc None (ở local)
-IS_DOCKER = True
-
-IS_TESTING = "test" in sys.argv
+# Kiểm tra xem có phải testing mode không (từ .env hoặc command line)
+IS_TESTING = os.getenv("IS_TESTING", "False").lower() in ("true", "1", "t") or "test" in sys.argv
 
 if IS_TESTING:
     print("Running tests with SQLite (local).")
@@ -90,56 +90,47 @@ if IS_TESTING:
             "NAME": BASE_DIR / "test_db.sqlite3",
         }
     }
-elif IS_DOCKER:
-    print("Running with Docker (MySQL) database.")
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.mysql",
-            "NAME": os.environ.get("DB_DATABASE", "cupid_db"),
-            "USER": os.environ.get("DB_USER", "root"),
-            "PASSWORD": os.environ.get("DB_PASSWORD", "password"),
-            "HOST": os.environ.get("DB_HOST", "db"),
-            "PORT": os.environ.get("DB_PORT", "3306"),
-        }
-    }
 else:
-    print("Running locally (SQLite).")
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
+    print("Using dj-database-url for DATABASES config.")
+    db_url = os.environ.get("DATABASE_URL")
+    if db_url:
+        DATABASES = {
+            "default": dj_database_url.config(default=db_url)
         }
-    }
+    else:
+        # Fallback to SQLite for local development
+        print("No DATABASE_URL set. Using SQLite for local development.")
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "db.sqlite3",
+            }
+        }
 
 
-CACHES = {
+# Channel layer config
+# For development, use InMemoryChannelLayer (no Redis needed)
+# For production, use Redis
+CHANNEL_LAYERS = {
     "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": "redis://redis:6379/1",
-        "OPTIONS": {
-            "CLIENT_CLASS": "django_redis.client.DefaultClient",
-        },
-    }
+        "BACKEND": "channels.layers.InMemoryChannelLayer"
+        # For production with Redis, uncomment below:
+        # "BACKEND": "channels_redis.core.RedisChannelLayer",
+        # "CONFIG": {
+        #     "hosts": [os.environ.get("REDIS_URL", "redis://127.0.0.1:6379/0")],
+        # },
+    },
 }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators
 
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",
-    },
-    {
-        "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator",},
+    {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator",},
+    {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator",},
+    {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",},
 ]
-
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
@@ -152,13 +143,44 @@ USE_I18N = True
 
 USE_TZ = True
 
-
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = "static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# Auth0 settings (read from environment/.env)
+AUTH0_DOMAIN = os.getenv("AUTH0_DOMAIN")
+AUTH0_AUDIENCE = os.getenv("AUTH0_AUDIENCE")
+
+# Supabase settings
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+# REST Framework configuration: use Auth0 JWT auth first, then Session (so admin/browser still works)
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "users.token_auth.ExpiringTokenAuthentication",
+        "users.authentication.Auth0JSONWebTokenAuthentication",
+        "rest_framework.authentication.SessionAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Cupid API",
+    "DESCRIPTION": "API documentation for frontend developers",
+    "VERSION": "1.0.0",
+}
+
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+]
