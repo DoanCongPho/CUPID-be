@@ -42,17 +42,35 @@ class GenQuestView(APIView):
 
     def post(self, request):
         from ..models.task import Task
+        from datetime import timedelta
+
         print("[GenQuestView] Start generating quests...")
+
+        # Calculate tomorrow's date
+        tomorrow = timezone.now().date() + timedelta(days=1)
+        print(f"[GenQuestView] Generating quests for date: {tomorrow}")
+
         with open(PLACES_PATH, encoding='utf-8') as f:
             places = json.load(f)
         print(f"[GenQuestView] Loaded {len(places)} places.")
+
         matches = Match.objects.all()
         print(f"[GenQuestView] Found {matches.count()} matches.")
+
         user_profiles = {p.user_id: p for p in UserProfile.objects.all()}
         print(f"[GenQuestView] Loaded {len(user_profiles)} user profiles.")
+
+        # Get tasks for tomorrow only
         tasks = {}
-        all_tasks = Task.objects.all()
-        print(f"[GenQuestView] Loaded {all_tasks.count()} tasks.")
+        tomorrow_start = timezone.make_aware(timezone.datetime.combine(tomorrow, timezone.datetime.min.time()))
+        tomorrow_end = timezone.make_aware(timezone.datetime.combine(tomorrow, timezone.datetime.max.time()))
+
+        all_tasks = Task.objects.filter(
+            scheduled_start_time__gte=tomorrow_start,
+            scheduled_start_time__lte=tomorrow_end
+        )
+        print(f"[GenQuestView] Loaded {all_tasks.count()} tasks for {tomorrow}.")
+
         for t in all_tasks:
             if t.user_id not in tasks:
                 tasks[t.user_id] = []
@@ -62,8 +80,10 @@ class GenQuestView(APIView):
                     t.scheduled_end_time.strftime("%H:%M")
                 ))
         print(f"[GenQuestView] Compiled constraints for {len(tasks)} users.")
+
         quest_infos = gen_quests_for_matches(matches, user_profiles, tasks, places)
         print(f"[GenQuestView] Generated quest info for {len(quest_infos)} matches.")
+
         created = 0
         created_quests = []
         for idx, info in enumerate(quest_infos):
@@ -79,7 +99,7 @@ class GenQuestView(APIView):
                 match=match,
                 location_name=info["location_name"],
                 activity=info["activity"],
-                quest_date=timezone.now().date(),
+                quest_date=tomorrow,  # Set quest date to tomorrow
                 location_latitude=info["location_latitude"],
                 location_longitude=info["location_longitude"],
                 status_user1=Quests.STATUS_PENDING,

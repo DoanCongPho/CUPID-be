@@ -192,7 +192,8 @@ class MatchAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(response.data['user1']['id'], self.user1.id)
         self.assertEqual(response.data['user2']['id'], self.user2.id)
-        self.assertEqual(response.data['status'], 'successful')
+        self.assertEqual(response.data['status_user1'], 'pending')
+        self.assertEqual(response.data['status_user2'], 'pending')
 
     def test_list_matches(self):
         """✅ List all matches for authenticated user"""
@@ -216,11 +217,11 @@ class MatchAPITests(APITestCase):
         match = Match.objects.create(user1=self.user1, user2=self.user2)
         url = f'{self.match_url}{match.id}/'
 
-        # Use PATCH for partial updates - status choices: successful, user1_missed, user2_missed, expired
-        data = {'status': 'expired', 'user1_rating': 5}
+        # Use PATCH for partial updates - update user ratings and status
+        data = {'status_user1': 'completed', 'user1_rating': 5}
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], 'expired')
+        self.assertEqual(response.data['status_user1'], 'completed')
         self.assertEqual(response.data['user1_rating'], 5)
 
     def test_match_with_user_endpoint(self):
@@ -299,11 +300,11 @@ class QuestAPITests(APITestCase):
         )
         url = f'{self.quest_url}{quest.id}/'
 
-        data = {'location_name': 'New name', 'status': 'completed'}
+        data = {'location_name': 'New name', 'status_user1': 'completed'}
         response = self.client.patch(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['location_name'], 'New name')
-        self.assertEqual(response.data['status'], 'completed')
+        self.assertEqual(response.data['status_user1'], 'completed')
 
     def test_delete_quest(self):
         """✅ Delete a quest"""

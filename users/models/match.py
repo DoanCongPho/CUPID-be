@@ -51,7 +51,7 @@ class Match(models.Model):
         ]
 
     def __str__(self):
-        return f"Match {self.pk}: {self.user1_id} <-> {self.user2_id} ({self.status})"
+        return f"Match {self.pk}: {self.user1_id} <-> {self.user2_id} (User1: {self.status_user1}, User2: {self.status_user2})"
 
 
 class Quests(models.Model):
@@ -111,4 +111,4 @@ class Quests(models.Model):
         unique_together = ('match', 'location_name')
 
     def __str__(self):
-        return f"Quest {self.pk} for match {self.match_id} ({self.status})"
+        return f"Quest {self.pk} for match {self.match_id} (User1: {self.status_user1}, User2: {self.status_user2})"
