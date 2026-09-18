@@ -306,7 +306,7 @@ class LogoutTests(APITestCase):
     def test_logout_without_authentication(self):
         """❌ Logout without authentication should fail"""
         response = self.client.post(self.logout_url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
 class TokenManagementTests(APITestCase):
@@ -346,4 +346,4 @@ class TokenManagementTests(APITestCase):
     def test_list_tokens_without_authentication(self):
         """❌ List tokens without authentication should fail"""
         response = self.client.get(self.tokens_url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
