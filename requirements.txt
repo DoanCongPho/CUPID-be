@@ -1,32 +1,43 @@
-asgiref==3.10.0
-autopep8==2.3.2
-black==25.9.0
-cachetools==6.2.1
-certifi==2025.10.5
-charset-normalizer==3.4.4
-click==8.3.0
-dj-database-url==3.0.1
-Django==5.2.7
+# Source of truth cho dependency là pyproject.toml (Poetry).
+# File này dành cho pip / build.sh (deploy) và phải được giữ đồng bộ với pyproject.toml.
+# Chỉ liệt kê direct dependency — pip tự resolve transitive.
+# Version dưới đây là bộ đã verify chạy được (migrate OK, server OK, 55/55 test pass).
+
+# --- Core Django ---
+Django==5.2.17
+djangorestframework==3.18.1
+python-dotenv==1.2.3
+dj-database-url==3.1.2
+drf-spectacular==0.29.0
+
+# --- Realtime / WebSocket (Channels) ---
+channels==4.3.2
+channels-redis==4.3.0
+daphne==4.2.3
+uvicorn==0.38.0
+websockets==15.0.1
+
+# --- Database / Cache ---
+psycopg2-binary==2.9.13
 django-redis==6.0.0
-djangorestframework==3.16.1
-ecdsa==0.19.1
-gunicorn==23.0.0
-idna==3.11
-isort==7.0.0
-mypy_extensions==1.1.0
-packaging==25.0
-pathspec==0.12.1
-platformdirs==4.5.0
-psycopg2-binary==2.9.11
-pyasn1==0.6.1
-pycodestyle==2.14.0
-python-dotenv==1.2.1
+
+# --- Auth ---
 python-jose==3.5.0
-pytokens==0.2.0
-redis==7.0.1
-requests==2.32.5
-rsa==4.2
-six==1.17.0
-sqlparse==0.5.3
-urllib3==2.5.0
+cachetools==6.2.6
+
+# --- Matching engine (engine.py, engine_gen_quest.py) ---
+numpy==2.5.3
+scipy==1.18.1
+
+# --- External services ---
+supabase==2.31.0
+requests==2.34.2
+
+# --- Deploy ---
+gunicorn==23.0.0
 whitenoise==6.11.0
+
+# --- Dev tools (không cần cho production) ---
+black==25.9.0
+isort==7.0.0
+autopep8==2.3.2
