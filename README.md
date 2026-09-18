@@ -187,7 +187,7 @@ When testing Channels/WebSocket functionality locally:
 
 ## Developer Notes
 
-1. **Registration Flow:** User registration supports attaching preferences. Review `users/serializers_auth.py` and `users/views_auth.py` when modifying registration fields.
+1. **Registration Flow:** User registration supports attaching preferences. Review `users/serializers/auth.py` and `users/views/auth.py` when modifying registration fields.
 
 2. **API Schema:** Use the drf-spectacular endpoints (`/api/docs/swagger/`) to validate serializers and view schema annotations after making model or serializer changes.
 

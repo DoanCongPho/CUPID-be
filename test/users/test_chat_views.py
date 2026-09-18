@@ -42,38 +42,38 @@ class ChatListTests(APITestCase):
 
     def test_list_user_chats(self):
         """Test listing user's chats"""
-        Chat.objects.create(match=self.match1)
-        Chat.objects.create(match=self.match2)
+        Chat.objects.update_or_create(match=self.match1, defaults={})[0]
+        Chat.objects.update_or_create(match=self.match2, defaults={})[0]
         
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         response = self.client.get(self.chat_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
-    def test_list_chats_empty(self):
-        """Test listing when no chats exist"""
+    def test_list_chats_auto_created_for_matches(self):
+        """Mỗi Match được users/signals.py tạo sẵn một Chat, nên không bao giờ rỗng"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         response = self.client.get(self.chat_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 0)
+        self.assertEqual(len(response.data), 2)
 
-    def test_create_chat(self):
-        """Test creating a chat"""
+    def test_create_chat_rejected_when_already_exists(self):
+        """Chat đã được tạo tự động cùng Match -> tạo thêm phải bị từ chối bằng 400"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         data = {'match_id': self.match1.id}
         response = self.client.post(self.chat_url, data, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(response.data['match']['id'], self.match1.id)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('match_id', response.data)
 
     def test_chat_includes_match_info(self):
         """Test chat response includes match information"""
-        chat = Chat.objects.create(match=self.match1)
-        
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         response = self.client.get(self.chat_url)
-        
+
         self.assertIn('match', response.data[0])
-        self.assertEqual(response.data[0]['match']['id'], self.match1.id)
+        # queryset sắp xếp theo -created_at nên không phụ thuộc thứ tự cụ thể
+        match_ids = {row['match']['id'] for row in response.data}
+        self.assertEqual(match_ids, {self.match1.id, self.match2.id})
 
 
 class ChatDetailTests(APITestCase):
@@ -89,7 +89,7 @@ class ChatDetailTests(APITestCase):
             password='pass123'
         )
         self.match = Match.objects.create(user1=self.user1, user2=self.user2)
-        self.chat = Chat.objects.create(match=self.match)
+        self.chat = Chat.objects.update_or_create(match=self.match, defaults={})[0]
         
         plaintext, _ = ExpiringToken.generate_token_for_user(self.user1)
         self.token = plaintext
@@ -105,7 +105,7 @@ class ChatDetailTests(APITestCase):
         """Test updating chat status"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         data = {'status': Chat.STATUS_CLOSED}
-        response = self.client.put(f'/api/chats/{self.chat.id}/', data, format='json')
+        response = self.client.patch(f'/api/chats/{self.chat.id}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['status'], Chat.STATUS_CLOSED)
 
@@ -145,7 +145,7 @@ class MessageListTests(APITestCase):
             password='pass123'
         )
         self.match = Match.objects.create(user1=self.user1, user2=self.user2)
-        self.chat = Chat.objects.create(match=self.match)
+        self.chat = Chat.objects.update_or_create(match=self.match, defaults={})[0]
         
         plaintext, _ = ExpiringToken.generate_token_for_user(self.user1)
         self.token1 = plaintext
@@ -259,7 +259,7 @@ class MessageDetailTests(APITestCase):
             password='pass123'
         )
         self.match = Match.objects.create(user1=self.user1, user2=self.user2)
-        self.chat = Chat.objects.create(match=self.match)
+        self.chat = Chat.objects.update_or_create(match=self.match, defaults={})[0]
         self.message = Message.objects.create(
             chat=self.chat,
             sender=self.user1,
@@ -313,7 +313,7 @@ class ChatSerializerTests(APITestCase):
             password='pass123'
         )
         match = Match.objects.create(user1=user1, user2=user2)
-        chat = Chat.objects.create(match=match)
+        chat = Chat.objects.update_or_create(match=match, defaults={})[0]
         
         from users.serializers.chat import ChatSerializer
         serializer = ChatSerializer(chat)
@@ -338,7 +338,7 @@ class MessageSerializerTests(APITestCase):
             password='pass123'
         )
         match = Match.objects.create(user1=user1, user2=user2)
-        chat = Chat.objects.create(match=match)
+        chat = Chat.objects.update_or_create(match=match, defaults={})[0]
         message = Message.objects.create(
             chat=chat,
             sender=user1,

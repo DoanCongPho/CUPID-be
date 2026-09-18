@@ -1,75 +1,73 @@
-import pytest
-from django.test import RequestFactory
-from django.contrib.auth import get_user_model
-from rest_framework.exceptions import AuthenticationFailed
-from rest_framework.test import APIClient
+"""
+Tests cho Auth0JSONWebTokenAuthentication và ProfileView.
 
-# Import the authentication class and the Profile view from your project.
-# Nếu module path khác, sửa import tương ứng:
+Trước đây file này viết theo kiểu pytest (hàm rời + fixture monkeypatch), nên
+`manage.py test` không chạy được. Đã chuyển sang unittest/APITestCase và dùng
+unittest.mock.patch thay cho monkeypatch.
+"""
+from unittest.mock import patch
+
+from django.contrib.auth import get_user_model
+from django.test import RequestFactory
+from rest_framework.exceptions import AuthenticationFailed
+from rest_framework.test import APITestCase, APIClient
+
 from users.authentication import Auth0JSONWebTokenAuthentication
 from users.views import ProfileView
 
 User = get_user_model()
 
 
-@pytest.mark.django_db
-def test_profile_view_authenticated(monkeypatch):
-    """
-    Patch the authentication class to return a valid User, then call the
-    ProfileView and assert we get HTTP 200 and the expected email in response.
-    """
-    # Create a real user in DB
-    user = User.objects.create_user(username="t_test", email="t_test@example.com", password="password")
+class Auth0AuthenticationTests(APITestCase):
+    """ProfileView kết hợp với Auth0 authentication class"""
 
-    # Create a fake authenticate method that returns (user, None)
-    def fake_authenticate(self, request):
-        return (user, None)
+    def test_profile_view_authenticated(self):
+        """
+        Giả lập authentication trả về user hợp lệ -> ProfileView phải trả 200
+        kèm email của user đó.
+        """
+        user = User.objects.create_user(
+            username="t_test", email="t_test@example.com", password="password"
+        )
 
-    monkeypatch.setattr(Auth0JSONWebTokenAuthentication, "authenticate", fake_authenticate)
+        def fake_authenticate(self, request):
+            return (user, None)
 
-    # Build request and call view
-    rf = RequestFactory()
-    request = rf.get("/api/profile/", HTTP_AUTHORIZATION="Bearer faketoken")
-    response = ProfileView.as_view()(request)
+        with patch.object(Auth0JSONWebTokenAuthentication, "authenticate", fake_authenticate):
+            request = RequestFactory().get(
+                "/api/profile/", HTTP_AUTHORIZATION="Bearer faketoken"
+            )
+            response = ProfileView.as_view()(request)
 
-    # DRF view should return a Response with .status_code and .data
-    assert response.status_code == 200
-    # Response may contain serializer data in .data
-    assert isinstance(response.data, dict)
-    assert response.data.get("email") == "t_test@example.com"
+        self.assertEqual(response.status_code, 200)
+        self.assertIsInstance(response.data, dict)
+        self.assertEqual(response.data.get("email"), "t_test@example.com")
 
+    def test_profile_view_invalid_token(self):
+        """Token hỏng -> AuthenticationFailed -> 401 (hoặc 403)"""
 
-@pytest.mark.django_db
-def test_profile_view_invalid_token(monkeypatch):
-    """
-    Patch the authentication class to raise AuthenticationFailed and assert
-    the view returns 401 (or appropriate unauthorized response).
-    """
-    def fake_auth_fail(self, request):
-        raise AuthenticationFailed("invalid token")
+        def fake_auth_fail(self, request):
+            raise AuthenticationFailed("invalid token")
 
-    monkeypatch.setattr(Auth0JSONWebTokenAuthentication, "authenticate", fake_auth_fail)
+        with patch.object(Auth0JSONWebTokenAuthentication, "authenticate", fake_auth_fail):
+            request = RequestFactory().get(
+                "/api/profile/", HTTP_AUTHORIZATION="Bearer invalid"
+            )
+            response = ProfileView.as_view()(request)
 
-    rf = RequestFactory()
-    request = rf.get("/api/profile/", HTTP_AUTHORIZATION="Bearer invalid")
-    response = ProfileView.as_view()(request)
+        self.assertIn(response.status_code, (401, 403))
 
-    # AuthenticationFailed should result in 401 Unauthorized
-    assert response.status_code in (401, 403)
+    def test_profile_view_force_authenticate(self):
+        """force_authenticate -> endpoint trả đúng dữ liệu của user đang đăng nhập"""
+        user = User.objects.create_user(
+            username="force_user", email="force@example.com", password="password"
+        )
+        client = APIClient()
+        client.force_authenticate(user=user)
 
+        response = client.get("/api/profile/")
 
-@pytest.mark.django_db
-def test_profile_view_force_authenticate():
-    """
-    Use APIClient.force_authenticate to simulate an authenticated request
-    and confirm the profile endpoint returns the logged-in user's data.
-    """
-    user = User.objects.create_user(username="force_user", email="force@example.com", password="password")
-    client = APIClient()
-    client.force_authenticate(user=user)
-
-    resp = client.get("/api/profile/")
-    assert resp.status_code == 200
-    data = resp.json()
-    assert data.get("email") == "force@example.com"
-    assert data.get("username") == "force_user"
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data.get("email"), "force@example.com")
+        self.assertEqual(data.get("username"), "force_user")

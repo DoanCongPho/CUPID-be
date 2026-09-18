@@ -67,9 +67,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
-
 # ASGI application for Channels
+# Project chạy thuần ASGI (WebSocket chat cần Channels), không dùng WSGI.
 ASGI_APPLICATION = "config.asgi.application"
 
 # Database

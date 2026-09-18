@@ -127,7 +127,7 @@ class TaskDetailTests(APITestCase):
         """Test updating task"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         data = {'description': 'Updated task'}
-        response = self.client.put(f'/api/tasks/{self.task.id}/', data, format='json')
+        response = self.client.patch(f'/api/tasks/{self.task.id}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['description'], 'Updated task')
 
@@ -140,7 +140,7 @@ class TaskDetailTests(APITestCase):
             'scheduled_start_time': start.isoformat(),
             'scheduled_end_time': end.isoformat()
         }
-        response = self.client.put(f'/api/tasks/{self.task.id}/', data, format='json')
+        response = self.client.patch(f'/api/tasks/{self.task.id}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
     def test_delete_task(self):
@@ -190,7 +190,7 @@ class UserModeSettingsTests(APITestCase):
 
     def test_get_settings(self):
         """Test retrieving user settings"""
-        settings = UserModeSettings.objects.create(user=self.user)
+        settings = UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         response = self.client.get(self.settings_url)
@@ -208,7 +208,7 @@ class UserModeSettingsTests(APITestCase):
 
     def test_update_settings(self):
         """Test updating user settings"""
-        UserModeSettings.objects.create(user=self.user)
+        UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         data = {
@@ -222,7 +222,7 @@ class UserModeSettingsTests(APITestCase):
 
     def test_update_location_sharing(self):
         """Test updating location sharing setting"""
-        UserModeSettings.objects.create(user=self.user)
+        UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         data = {'location_sharing_enabled': False}
@@ -232,7 +232,7 @@ class UserModeSettingsTests(APITestCase):
 
     def test_update_notifications(self):
         """Test updating notification settings"""
-        UserModeSettings.objects.create(user=self.user)
+        UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         data = {'spotmatch_notifications_enabled': False}
@@ -242,7 +242,7 @@ class UserModeSettingsTests(APITestCase):
 
     def test_partial_settings_update(self):
         """Test partial settings update"""
-        settings = UserModeSettings.objects.create(user=self.user)
+        settings = UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         original_reminder = settings.daily_reminders_enabled
         
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
@@ -313,7 +313,7 @@ class UserModeSettingsSerializerTests(APITestCase):
             email='setserialized@example.com',
             password='pass123'
         )
-        settings = UserModeSettings.objects.create(user=user)
+        settings = UserModeSettings.objects.update_or_create(user=user, defaults={})[0]
         
         from users.serializers.task import UserModeSettingsSerializer
         serializer = UserModeSettingsSerializer(settings)

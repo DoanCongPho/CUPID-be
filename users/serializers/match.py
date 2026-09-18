@@ -39,6 +39,13 @@ class MatchSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "user1", "user2", "matched_at"]
 
+    def validate_user2_id(self, value):
+        """Không cho phép tự match với chính mình."""
+        request = self.context.get("request")
+        if request is not None and request.user == value:
+            raise serializers.ValidationError("Không thể tạo match với chính mình.")
+        return value
+
     def get_user_representation(self, user):
         """Helper method to serialize user information"""
         if not user:
