@@ -43,15 +43,9 @@ class RegisterView(APIView):
         home_latitude = validated_data.get("home_latitude")
         home_longitude = validated_data.get("home_longitude")
 
-        # Generate username from email or phone_number
-        if email:
-            username = email.split("@")[0]
-        else:
-            username = phone_number.replace("+", "").replace("-", "").replace(" ", "")
-
-        # Create user
+        # Create user — username do UserManager tự sinh từ email/phone_number
+        # và tự thêm hậu tố nếu trùng (xem users/managers.py)
         user = User.objects.create_user(
-            username=username,
             email=email or "",
             phone_number=phone_number or None,
             password=password,
