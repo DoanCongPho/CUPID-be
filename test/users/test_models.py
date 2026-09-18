@@ -246,7 +246,7 @@ class MatchTests(TestCase):
         self.assertEqual(match.user2, self.user2)
 
     def test_match_status_choices(self):
-        """Test match status choices (mỗi user có status riêng)"""
+        """Test match status choices (each user has their own status)"""
         statuses = [
             Match.STATUS_PENDING,
             Match.STATUS_COMPLETED,
@@ -337,8 +337,8 @@ class QuestTests(TestCase):
         for status in [Quests.STATUS_PENDING, Quests.STATUS_COMPLETED]:
             quest = Quests.objects.create(
                 match=self.match,
-                # (match, location_name) là unique_together nên mỗi vòng phải khác nhau
-                location_name=f"Địa điểm {status}",
+                # (match, location_name) is unique_together, so vary it each iteration
+                location_name=f"Location {status}",
                 activity="Activity",
                 quest_date="2025-01-10",
                 status_user1=status,

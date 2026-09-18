@@ -29,10 +29,10 @@ class ExpiringTokenAuthentication(authentication.BaseAuthentication):
 
         tok_obj = ExpiringToken.verify_token(token)
         if not tok_obj:
-            # Scheme "Bearer" dùng chung với Auth0. Nếu raise ở đây thì cả chuỗi
-            # DEFAULT_AUTHENTICATION_CLASSES dừng lại và Auth0JSONWebTokenAuthentication
-            # không bao giờ được thử. Trả None để nhường cho class kế tiếp.
-            # Scheme "Token" là của riêng app nên vẫn báo lỗi thẳng.
+            # "Bearer" is shared with Auth0. Raising here aborts the whole
+            # DEFAULT_AUTHENTICATION_CLASSES chain, so Auth0JSONWebTokenAuthentication
+            # would never get a chance. Return None to defer to the next class.
+            # "Token" belongs to this app alone, so it still fails loudly.
             if scheme.lower() == "bearer":
                 return None
             raise exceptions.AuthenticationFailed("Invalid or expired token.")
@@ -41,12 +41,12 @@ class ExpiringTokenAuthentication(authentication.BaseAuthentication):
 
     def authenticate_header(self, request):
         """
-        Giá trị cho header WWW-Authenticate.
+        Value for the WWW-Authenticate header.
 
-        DRF chỉ trả 401 Unauthorized khi authentication class có khai hàm này;
-        nếu không nó trả 403 Forbidden cho cả request thiếu credentials — sai
-        ngữ nghĩa HTTP. Có hàm này thì:
-          - chưa đăng nhập        -> 401 Unauthorized
-          - đăng nhập nhưng cấm   -> 403 Forbidden
+        DRF only returns 401 Unauthorized when an authentication class defines
+        this method; otherwise it returns 403 Forbidden even for requests with
+        no credentials, which is the wrong HTTP semantic. With it:
+          - not authenticated      -> 401 Unauthorized
+          - authenticated, denied  -> 403 Forbidden
         """
         return self.keyword_tokens[0]

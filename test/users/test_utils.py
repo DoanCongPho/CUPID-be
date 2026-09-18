@@ -36,8 +36,8 @@ class UserFactory:
         profile_data.update({k: v for k, v in profile_kwargs.items()
                             if k not in ['full_name', 'gender', 'nickname']})
 
-        # UserProfile đã được users/signals.py tạo sẵn khi User được tạo,
-        # nên phải update thay vì create để không vi phạm ràng buộc OneToOne.
+        # users/signals.py already created the UserProfile with the User, so
+        # update it instead of creating a second one and breaking the OneToOne.
         UserProfile.objects.update_or_create(user=user, defaults=profile_data)
         return user
 
@@ -91,7 +91,7 @@ class MatchFactory:
         if not user2:
             user2 = UserFactory.create_user()
         
-        # Match không còn field `status` chung — mỗi user có status riêng
+        # Match no longer has a single `status` field; each user has their own
         status = status or Match.STATUS_PENDING
         return Match.objects.create(
             user1=user1,
@@ -120,7 +120,7 @@ class QuestFactory:
         
         quest_date = kwargs.get('quest_date', timezone.now().date())
         
-        # Quests cũng tách status theo từng user
+        # Quests splits status per user as well
         status = status or Quests.STATUS_PENDING
         return Quests.objects.create(
             match=match,

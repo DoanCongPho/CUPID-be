@@ -133,7 +133,7 @@ class MatchAndQuestIntegrationTests(APITestCase):
         quest_data = {
             'match_id': match_id,
             'activity': 'Dinner',
-            'location_name': 'Nhà hàng A',
+            'location_name': 'Restaurant A',
             'quest_date': '2025-01-20'
         }
         quest_response = self.client.post('/api/quests/', quest_data, format='json')
@@ -180,7 +180,7 @@ class ChatAndMessagingIntegrationTests(APITestCase):
         
         # Create chat
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token1}')
-        # Chat được users/signals.py tạo tự động cùng Match
+        # the Chat is created automatically with the Match by users/signals.py
         chat_id = match.chat.id
         
         # User1 sends message
@@ -382,7 +382,7 @@ class CompleteUserJourneyIntegrationTests(APITestCase, AuthTestMixin):
         quest_id = quest_response.data['id']
         
         # User1 creates chat and sends message
-        # Chat được users/signals.py tạo tự động cùng Match
+        # the Chat is created automatically with the Match by users/signals.py
         chat_id = self.client.get('/api/chats/').data[0]['id']
         
         self.client.post(f'/api/chats/{chat_id}/messages/', 

@@ -1,7 +1,7 @@
-# Source of truth cho dependency là pyproject.toml (Poetry).
-# File này dành cho pip / build.sh (deploy) và phải được giữ đồng bộ với pyproject.toml.
-# Chỉ liệt kê direct dependency — pip tự resolve transitive.
-# Version dưới đây là bộ đã verify chạy được (migrate OK, server OK, 55/55 test pass).
+# pyproject.toml (Poetry) is the source of truth for dependencies.
+# This file is for pip / build.sh (deploy) and must be kept in sync with it.
+# Only direct dependencies are listed; pip resolves transitive ones.
+# These versions are a verified working set (migrate, server and test suite all pass).
 
 # --- Core Django ---
 Django==5.2.17
@@ -37,7 +37,7 @@ requests==2.34.2
 gunicorn==23.0.0
 whitenoise==6.11.0
 
-# --- Dev tools (không cần cho production) ---
+# --- Dev tools (not needed in production) ---
 black==25.9.0
 isort==7.0.0
 autopep8==2.3.2

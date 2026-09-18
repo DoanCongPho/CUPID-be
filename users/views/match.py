@@ -91,7 +91,7 @@ class GenQuestView(APIView):
                 print(f"[GenQuestView] Quest info {idx} is None, skipping.")
                 continue
             match = info["match"]
-            # Chỉ skip nếu quest cho match và location_name này đã tồn tại
+            # Skip only when a quest already exists for this match and location
             if Quests.objects.filter(match=match, location_name=info["location_name"]).exists():
                 print(f"[GenQuestView] Quest for match {match.id} at {info['location_name']} already exists, skipping.")
                 continue
