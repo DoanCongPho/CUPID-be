@@ -75,52 +75,37 @@ class UserProfileTests(TestCase):
 
     def test_create_profile(self):
         """Test creating a user profile"""
-        profile = UserProfile.objects.create(
-            user=self.user,
-            full_name="John Doe",
-            nickname="john",
-            gender="M"
-        )
+        profile = UserProfile.objects.update_or_create(user=self.user, defaults={"full_name": "John Doe", "nickname": "john", "gender": "M"})[0]
         self.assertEqual(profile.user, self.user)
         self.assertEqual(profile.full_name, "John Doe")
 
     def test_profile_one_to_one_with_user(self):
         """Test OneToOne relationship with User"""
-        profile = UserProfile.objects.create(
-            user=self.user,
-            full_name="Jane Doe"
-        )
+        profile = UserProfile.objects.update_or_create(user=self.user, defaults={"full_name": "Jane Doe"})[0]
         # Accessing through reverse relation
         self.assertEqual(self.user.profile, profile)
 
     def test_profile_default_values(self):
         """Test profile default values"""
-        profile = UserProfile.objects.create(user=self.user)
+        profile = UserProfile.objects.update_or_create(user=self.user, defaults={})[0]
         self.assertFalse(profile.is_verified)
         self.assertEqual(profile.total_xp, 0)
         self.assertFalse(profile.is_matched)
 
     def test_profile_with_coordinates(self):
         """Test profile with home coordinates"""
-        profile = UserProfile.objects.create(
-            user=self.user,
-            home_latitude=21.0285,
-            home_longitude=105.8542
-        )
+        profile = UserProfile.objects.update_or_create(user=self.user, defaults={"home_latitude": 21.0285, "home_longitude": 105.8542})[0]
         self.assertEqual(profile.home_latitude, 21.0285)
         self.assertEqual(profile.home_longitude, 105.8542)
 
     def test_profile_with_service_account(self):
         """Test service account marking"""
-        profile = UserProfile.objects.create(
-            user=self.user,
-            is_service_account=True
-        )
+        profile = UserProfile.objects.update_or_create(user=self.user, defaults={"is_service_account": True})[0]
         self.assertTrue(profile.is_service_account)
 
     def test_profile_str_representation(self):
         """Test UserProfile string representation"""
-        profile = UserProfile.objects.create(user=self.user)
+        profile = UserProfile.objects.update_or_create(user=self.user, defaults={})[0]
         self.assertIn(self.user.username, str(profile))
 
 
@@ -135,12 +120,12 @@ class UserModeSettingsTests(TestCase):
 
     def test_create_settings(self):
         """Test creating user settings"""
-        settings = UserModeSettings.objects.create(user=self.user)
+        settings = UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         self.assertIsNotNone(settings)
 
     def test_settings_defaults(self):
         """Test default values for settings"""
-        settings = UserModeSettings.objects.create(user=self.user)
+        settings = UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         self.assertFalse(settings.ghost_mode_enabled)
         self.assertTrue(settings.daily_reminders_enabled)
         self.assertTrue(settings.location_sharing_enabled)
@@ -148,7 +133,7 @@ class UserModeSettingsTests(TestCase):
 
     def test_modify_settings(self):
         """Test modifying user settings"""
-        settings = UserModeSettings.objects.create(user=self.user)
+        settings = UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         settings.ghost_mode_enabled = True
         settings.daily_reminders_enabled = False
         settings.save()
@@ -159,7 +144,7 @@ class UserModeSettingsTests(TestCase):
 
     def test_settings_one_to_one(self):
         """Test OneToOne relationship"""
-        settings = UserModeSettings.objects.create(user=self.user)
+        settings = UserModeSettings.objects.update_or_create(user=self.user, defaults={})[0]
         self.assertEqual(self.user.settings, settings)
 
 
@@ -255,26 +240,26 @@ class MatchTests(TestCase):
         match = Match.objects.create(
             user1=self.user1,
             user2=self.user2,
-            status=Match.STATUS_SUCCESSFUL
+            status_user1=Match.STATUS_COMPLETED
         )
         self.assertEqual(match.user1, self.user1)
         self.assertEqual(match.user2, self.user2)
 
     def test_match_status_choices(self):
-        """Test match status choices"""
+        """Test match status choices (mỗi user có status riêng)"""
         statuses = [
-            Match.STATUS_SUCCESSFUL,
-            Match.STATUS_USER1_MISSED,
-            Match.STATUS_USER2_MISSED,
-            Match.STATUS_EXPIRED
+            Match.STATUS_PENDING,
+            Match.STATUS_COMPLETED,
         ]
         for status in statuses:
             match = Match.objects.create(
                 user1=self.user1,
                 user2=self.user2,
-                status=status
+                status_user1=status,
+                status_user2=status
             )
-            self.assertEqual(match.status, status)
+            self.assertEqual(match.status_user1, status)
+            self.assertEqual(match.status_user2, status)
 
     def test_match_ratings(self):
         """Test match ratings"""
@@ -302,7 +287,7 @@ class MatchTests(TestCase):
         match = Match.objects.create(
             user1=self.user1,
             user2=self.user2,
-            status=Match.STATUS_SUCCESSFUL
+            status_user1=Match.STATUS_COMPLETED
         )
         self.assertIn(str(self.user1.id), str(match))
 
@@ -330,7 +315,7 @@ class QuestTests(TestCase):
             match=self.match,
             activity="Coffee",
             quest_date="2025-01-10",
-            status=Quests.STATUS_PENDING
+            status_user1=Quests.STATUS_PENDING
         )
         self.assertEqual(quest.match, self.match)
         self.assertEqual(quest.activity, "Coffee")
@@ -352,11 +337,15 @@ class QuestTests(TestCase):
         for status in [Quests.STATUS_PENDING, Quests.STATUS_COMPLETED]:
             quest = Quests.objects.create(
                 match=self.match,
+                # (match, location_name) là unique_together nên mỗi vòng phải khác nhau
+                location_name=f"Địa điểm {status}",
                 activity="Activity",
                 quest_date="2025-01-10",
-                status=status
+                status_user1=status,
+                status_user2=status
             )
-            self.assertEqual(quest.status, status)
+            self.assertEqual(quest.status_user1, status)
+            self.assertEqual(quest.status_user2, status)
 
     def test_quest_unique_together(self):
         """Test unique constraint on (match, location_name)"""
@@ -416,29 +405,23 @@ class ChatTests(TestCase):
 
     def test_create_chat(self):
         """Test creating a chat"""
-        chat = Chat.objects.create(
-            match=self.match,
-            status=Chat.STATUS_ACTIVE
-        )
+        chat = Chat.objects.update_or_create(match=self.match, defaults={"status": Chat.STATUS_ACTIVE})[0]
         self.assertEqual(chat.match, self.match)
 
     def test_chat_status_choices(self):
         """Test chat status choices"""
         for status in [Chat.STATUS_ACTIVE, Chat.STATUS_CLOSED]:
-            chat = Chat.objects.create(
-                match=self.match,
-                status=status
-            )
+            chat = Chat.objects.update_or_create(match=self.match, defaults={"status": status})[0]
             self.assertEqual(chat.status, status)
 
     def test_chat_one_to_one_with_match(self):
         """Test OneToOne relationship with Match"""
-        chat = Chat.objects.create(match=self.match)
+        chat = Chat.objects.update_or_create(match=self.match, defaults={})[0]
         self.assertEqual(self.match.chat, chat)
 
     def test_chat_str_representation(self):
         """Test Chat string representation"""
-        chat = Chat.objects.create(match=self.match)
+        chat = Chat.objects.update_or_create(match=self.match, defaults={})[0]
         self.assertIn(str(self.match.id), str(chat))
 
 
@@ -458,7 +441,7 @@ class MessageTests(TestCase):
             user1=self.user1,
             user2=self.user2
         )
-        self.chat = Chat.objects.create(match=self.match)
+        self.chat = Chat.objects.update_or_create(match=self.match, defaults={})[0]
 
     def test_create_message(self):
         """Test creating a message"""

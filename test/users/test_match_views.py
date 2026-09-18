@@ -124,10 +124,10 @@ class MatchDetailTests(APITestCase):
     def test_update_match(self):
         """Test updating match"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
-        data = {'status': Match.STATUS_EXPIRED}
-        response = self.client.put(f'/api/matches/{self.match.id}/', data, format='json')
+        data = {'status_user1': Match.STATUS_COMPLETED}
+        response = self.client.patch(f'/api/matches/{self.match.id}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], Match.STATUS_EXPIRED)
+        self.assertEqual(response.data['status_user1'], Match.STATUS_COMPLETED)
 
     def test_delete_match(self):
         """Test deleting match"""
@@ -281,12 +281,12 @@ class QuestDetailTests(APITestCase):
         """Test updating quest"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         data = {
-            'status': Quests.STATUS_COMPLETED,
+            'status_user1': Quests.STATUS_COMPLETED,
             'xp_reward': 100
         }
-        response = self.client.put(f'/api/quests/{self.quest.id}/', data, format='json')
+        response = self.client.patch(f'/api/quests/{self.quest.id}/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data['status'], Quests.STATUS_COMPLETED)
+        self.assertEqual(response.data['status_user1'], Quests.STATUS_COMPLETED)
 
     def test_delete_quest(self):
         """Test deleting quest"""
@@ -325,7 +325,7 @@ class QuestHintViewTests(APITestCase):
         """Test user1 posting hint"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token1}')
         data = {'hint': 'Near subway station'}
-        response = self.client.post(f'/api/quests/{self.quest.id}/hint/', data, format='json')
+        response = self.client.post(f'/api/quests/{self.quest.id}/post-hint/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['hint_user1'], 'Near subway station')
 
@@ -333,7 +333,7 @@ class QuestHintViewTests(APITestCase):
         """Test user2 posting hint"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token2}')
         data = {'hint': 'Has outdoor seating'}
-        response = self.client.post(f'/api/quests/{self.quest.id}/hint/', data, format='json')
+        response = self.client.post(f'/api/quests/{self.quest.id}/post-hint/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['hint_user2'], 'Has outdoor seating')
 
@@ -341,7 +341,7 @@ class QuestHintViewTests(APITestCase):
         """Test posting empty hint fails"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token1}')
         data = {'hint': ''}
-        response = self.client.post(f'/api/quests/{self.quest.id}/hint/', data, format='json')
+        response = self.client.post(f'/api/quests/{self.quest.id}/post-hint/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
     def test_post_hint_unrelated_user(self):
@@ -355,7 +355,7 @@ class QuestHintViewTests(APITestCase):
         
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
         data = {'hint': 'Hint'}
-        response = self.client.post(f'/api/quests/{self.quest.id}/hint/', data, format='json')
+        response = self.client.post(f'/api/quests/{self.quest.id}/post-hint/', data, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
 

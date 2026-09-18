@@ -204,7 +204,7 @@ class UserLoginTests(APITestCase):
             phone_number='+84901111111',
             password='loginpass123'
         )
-        UserProfile.objects.create(user=self.user)
+        UserProfile.objects.update_or_create(user=self.user, defaults={})[0]
 
     def test_login_with_email(self):
         """Test login with email"""

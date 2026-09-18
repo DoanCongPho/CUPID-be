@@ -29,15 +29,16 @@ class UserFactory:
         )
         
         profile_data = {
-            'user': user,
             'full_name': profile_kwargs.get('full_name', f'Test User {user.id}'),
             'gender': profile_kwargs.get('gender', 'M'),
             'nickname': profile_kwargs.get('nickname', f'user{user.id}'),
         }
-        profile_data.update({k: v for k, v in profile_kwargs.items() 
+        profile_data.update({k: v for k, v in profile_kwargs.items()
                             if k not in ['full_name', 'gender', 'nickname']})
-        
-        UserProfile.objects.create(**profile_data)
+
+        # UserProfile đã được users/signals.py tạo sẵn khi User được tạo,
+        # nên phải update thay vì create để không vi phạm ràng buộc OneToOne.
+        UserProfile.objects.update_or_create(user=user, defaults=profile_data)
         return user
 
     @staticmethod
@@ -90,10 +91,13 @@ class MatchFactory:
         if not user2:
             user2 = UserFactory.create_user()
         
+        # Match không còn field `status` chung — mỗi user có status riêng
+        status = status or Match.STATUS_PENDING
         return Match.objects.create(
             user1=user1,
             user2=user2,
-            status=status or Match.STATUS_SUCCESSFUL,
+            status_user1=status,
+            status_user2=status,
             matched_at=timezone.now()
         )
 
@@ -101,7 +105,7 @@ class MatchFactory:
     def create_match_with_chat(user1=None, user2=None):
         """Create a match with associated chat"""
         match = MatchFactory.create_match(user1, user2)
-        chat = Chat.objects.create(match=match)
+        chat = Chat.objects.update_or_create(match=match, defaults={})[0]
         return match, chat
 
 
@@ -116,11 +120,14 @@ class QuestFactory:
         
         quest_date = kwargs.get('quest_date', timezone.now().date())
         
+        # Quests cũng tách status theo từng user
+        status = status or Quests.STATUS_PENDING
         return Quests.objects.create(
             match=match,
             activity=activity,
             quest_date=quest_date,
-            status=status or Quests.STATUS_PENDING,
+            status_user1=status,
+            status_user2=status,
             location_latitude=kwargs.get('latitude', 21.0285),
             location_longitude=kwargs.get('longitude', 105.8542),
             xp_reward=kwargs.get('xp_reward', 0)
@@ -139,7 +146,7 @@ class MessageFactory:
             user2 = UserFactory.create_user()
         
         match = Match.objects.create(user1=user1, user2=user2)
-        chat = Chat.objects.create(match=match)
+        chat = Chat.objects.update_or_create(match=match, defaults={})[0]
         
         messages = []
         for i in range(message_count):
@@ -232,7 +239,7 @@ def create_test_data_set():
     match2 = MatchFactory.create_match(user2, user3)
     
     # Create chats and messages
-    chat1 = Chat.objects.create(match=match1)
+    chat1 = Chat.objects.update_or_create(match=match1, defaults={})[0]
     Message.objects.create(chat=chat1, sender=user1, content='Hi user2')
     Message.objects.create(chat=chat1, sender=user2, content='Hi user1')
     
@@ -245,8 +252,8 @@ def create_test_data_set():
     TaskFactory.create_task(user2, 'Work')
     
     # Create settings
-    UserModeSettings.objects.create(user=user1)
-    UserModeSettings.objects.create(user=user2)
+    UserModeSettings.objects.update_or_create(user=user1, defaults={})[0]
+    UserModeSettings.objects.update_or_create(user=user2, defaults={})[0]
     
     return {
         'users': {'user1': user1, 'user2': user2, 'user3': user3},

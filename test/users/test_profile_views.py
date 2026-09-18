@@ -19,14 +19,7 @@ class ProfileViewTests(APITestCase):
             email='profile@example.com',
             password='pass123'
         )
-        self.profile = UserProfile.objects.create(
-            user=self.user,
-            full_name='Test User',
-            gender='M',
-            nickname='testuser',
-            home_latitude=21.0285,
-            home_longitude=105.8542
-        )
+        self.profile = UserProfile.objects.update_or_create(user=self.user, defaults={"full_name": 'Test User', "gender": 'M', "nickname": 'testuser', "home_latitude": 21.0285, "home_longitude": 105.8542})[0]
         plaintext, _ = ExpiringToken.generate_token_for_user(self.user)
         self.token = plaintext
 
@@ -132,21 +125,9 @@ class UserPublicProfileTests(APITestCase):
             password='pass123'
         )
         
-        UserProfile.objects.create(
-            user=self.user1,
-            full_name='User 1',
-            nickname='user1nick'
-        )
-        UserProfile.objects.create(
-            user=self.user2,
-            full_name='User 2',
-            nickname='user2nick'
-        )
-        UserProfile.objects.create(
-            user=self.user3,
-            full_name='User 3',
-            nickname='user3nick'
-        )
+        UserProfile.objects.update_or_create(user=self.user1, defaults={"full_name": 'User 1', "nickname": 'user1nick'})[0]
+        UserProfile.objects.update_or_create(user=self.user2, defaults={"full_name": 'User 2', "nickname": 'user2nick'})[0]
+        UserProfile.objects.update_or_create(user=self.user3, defaults={"full_name": 'User 3', "nickname": 'user3nick'})[0]
         
         # Create a match between user1 and user2
         Match.objects.create(user1=self.user1, user2=self.user2)
@@ -157,19 +138,19 @@ class UserPublicProfileTests(APITestCase):
     def test_view_matched_user_profile(self):
         """Test viewing profile of matched user"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
-        response = self.client.get(f'/api/profile/{self.user2.id}/')
+        response = self.client.get(f'/api/profiles/{self.user2.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['full_name'], 'User 2')
 
     def test_cannot_view_unmatched_user_profile(self):
         """Test cannot view profile of unmatched user"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
-        response = self.client.get(f'/api/profile/{self.user3.id}/')
+        response = self.client.get(f'/api/profiles/{self.user3.id}/')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_view_profile_requires_authentication(self):
         """Test viewing other profile requires authentication"""
-        response = self.client.get(f'/api/profile/{self.user2.id}/')
+        response = self.client.get(f'/api/profiles/{self.user2.id}/')
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_view_nonexistent_user_profile(self):
@@ -182,7 +163,7 @@ class UserPublicProfileTests(APITestCase):
         """Test profile visible regardless of match direction"""
         # Create match with user2 as user1
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
-        response = self.client.get(f'/api/profile/{self.user2.id}/')
+        response = self.client.get(f'/api/profiles/{self.user2.id}/')
         self.assertEqual(response.status_code, status.HTTP_200_OK)
 
 
@@ -195,26 +176,9 @@ class ProfileSerializerTests(APITestCase):
             email='serializer@example.com',
             password='pass123'
         )
-        profile = UserProfile.objects.create(
-            user=user,
-            full_name='Full Name',
-            gender='F',
-            date_of_birth='1995-01-01',
-            nickname='nick',
-            teaser_description='desc',
-            profile_photo_url='https://example.com/photo.jpg',
-            verification_video_url='https://example.com/video.mp4',
-            is_verified=False,
-            total_xp=0,
-            is_matched=False,
-            home_latitude=21.0285,
-            home_longitude=105.8542
-        )
+        profile = UserProfile.objects.update_or_create(user=user, defaults={"full_name": 'Full Name', "gender": 'F', "date_of_birth": '1995-01-01', "nickname": 'nick', "teaser_description": 'desc', "profile_photo_url": 'https://example.com/photo.jpg', "verification_video_url": 'https://example.com/video.mp4', "is_verified": False, "total_xp": 0, "is_matched": False, "home_latitude": 21.0285, "home_longitude": 105.8542})[0]
         
-        plaintext, _ = ExpiringToken.generate_token_for_user(user)
-        client = APITestCase()
-        client.client.credentials(HTTP_AUTHORIZATION=f'Bearer {plaintext}')
-        
+        # Test này chỉ kiểm tra serializer nên không cần HTTP client
         from users.serializers.profile import UserProfileSerializer
         serializer = UserProfileSerializer(profile)
         
@@ -229,7 +193,7 @@ class ProfileSerializerTests(APITestCase):
             email='readonly@example.com',
             password='pass123'
         )
-        profile = UserProfile.objects.create(user=user)
+        profile = UserProfile.objects.update_or_create(user=user, defaults={})[0]
         
         from users.serializers.profile import UserProfileSerializer
         serializer = UserProfileSerializer(profile)

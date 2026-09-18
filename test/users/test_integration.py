@@ -133,6 +133,7 @@ class MatchAndQuestIntegrationTests(APITestCase):
         quest_data = {
             'match_id': match_id,
             'activity': 'Dinner',
+            'location_name': 'Nhà hàng A',
             'quest_date': '2025-01-20'
         }
         quest_response = self.client.post('/api/quests/', quest_data, format='json')
@@ -140,12 +141,12 @@ class MatchAndQuestIntegrationTests(APITestCase):
         
         # User1 posts hint
         hint_data = {'hint': 'Near the park'}
-        self.client.post(f'/api/quests/{quest_id}/hint/', hint_data, format='json')
+        self.client.post(f'/api/quests/{quest_id}/post-hint/', hint_data, format='json')
         
         # User2 posts hint
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token2}')
         hint_data = {'hint': 'Has good wifi'}
-        hint_response = self.client.post(f'/api/quests/{quest_id}/hint/', hint_data, format='json')
+        hint_response = self.client.post(f'/api/quests/{quest_id}/post-hint/', hint_data, format='json')
         self.assertEqual(hint_response.status_code, status.HTTP_200_OK)
 
     def test_match_and_rating_flow(self):
@@ -179,9 +180,8 @@ class ChatAndMessagingIntegrationTests(APITestCase):
         
         # Create chat
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token1}')
-        chat_data = {'match_id': match.id}
-        chat_response = self.client.post('/api/chats/', chat_data, format='json')
-        chat_id = chat_response.data['id']
+        # Chat được users/signals.py tạo tự động cùng Match
+        chat_id = match.chat.id
         
         # User1 sends message
         msg_data = {'content': 'Hello!'}
@@ -204,7 +204,7 @@ class ChatAndMessagingIntegrationTests(APITestCase):
         user2, token2, _ = UserFactory.create_user_with_token()
         
         match = MatchFactory.create_match(user1, user2)
-        chat = Chat.objects.create(match=match)
+        chat = Chat.objects.update_or_create(match=match, defaults={})[0]
         
         # User1 starts conversation
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {token1}')
@@ -382,8 +382,8 @@ class CompleteUserJourneyIntegrationTests(APITestCase, AuthTestMixin):
         quest_id = quest_response.data['id']
         
         # User1 creates chat and sends message
-        chat_response = self.client.post('/api/chats/', {'match_id': match_id}, format='json')
-        chat_id = chat_response.data['id']
+        # Chat được users/signals.py tạo tự động cùng Match
+        chat_id = self.client.get('/api/chats/').data[0]['id']
         
         self.client.post(f'/api/chats/{chat_id}/messages/', 
                         {'content': 'Hello! Ready for our adventure?'}, format='json')
@@ -397,7 +397,7 @@ class CompleteUserJourneyIntegrationTests(APITestCase, AuthTestMixin):
         self.assertEqual(len(messages_response.data), 1)
         
         # User2 posts hint
-        self.client.post(f'/api/quests/{quest_id}/hint/', 
+        self.client.post(f'/api/quests/{quest_id}/post-hint/', 
                         {'hint': 'I love this place!'}, format='json')
         
         # User2 sends reply
