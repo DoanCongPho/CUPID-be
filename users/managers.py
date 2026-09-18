@@ -37,7 +37,7 @@ class UserManager(DjangoUserManager):
         base = self._base_username(email, phone_number)
         candidate = base
         suffix = 1
-        while self.model._default_manager.filter(username=candidate).exists():
+        while self.filter(username=candidate).exists():
             suffix += 1
             candidate = f"{base}{suffix}"[:150]
         return candidate

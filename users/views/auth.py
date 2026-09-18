@@ -54,7 +54,7 @@ class RegisterView(APIView):
         )
 
         # Create or update profile with all provided information
-        profile, created = UserProfile.objects.get_or_create(user=user)
+        profile, _ = UserProfile.objects.get_or_create(user=user)
         profile.full_name = full_name
         profile.gender = gender
         profile.nickname = nickname
@@ -110,7 +110,7 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
 
         user = serializer.validated_data["user"]
-        profile, created = UserProfile.objects.get_or_create(user=user)
+        profile, _ = UserProfile.objects.get_or_create(user=user)
 
         token_plain, token_obj = ExpiringToken.generate_token_for_user(user, days_valid=365, name="login")
 
