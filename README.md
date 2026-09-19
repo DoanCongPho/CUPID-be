@@ -4,18 +4,25 @@ Backend API for the Cupid dating application built with Django REST Framework an
 
 ## Prerequisites
 
-- **Python 3.8+** installed
+- **Python 3.13+** installed (required by `pyproject.toml`)
 - **Poetry** for dependency and virtual environment management
 - **(Optional)** Docker for running Redis or PostgreSQL locally
+
+Poetry is the single source of truth for dependencies: `pyproject.toml` declares
+them and `poetry.lock` pins the exact resolved versions. There is no
+`requirements.txt`.
 
 ### Install Poetry
 
 ```bash
-# Via official installer (recommended)
-curl -sSL https://install.python-poetry.org | python3 -
+# macOS, via Homebrew (recommended — survives Python upgrades)
+brew install poetry
 
 # Or via pipx
 pipx install poetry
+
+# Or via the official installer
+curl -sSL https://install.python-poetry.org | python3 -
 ```
 
 Verify installation:
