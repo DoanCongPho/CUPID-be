@@ -1,9 +1,9 @@
 """
-Tests cho Auth0JSONWebTokenAuthentication và ProfileView.
+Tests for Auth0JSONWebTokenAuthentication and ProfileView.
 
-Trước đây file này viết theo kiểu pytest (hàm rời + fixture monkeypatch), nên
-`manage.py test` không chạy được. Đã chuyển sang unittest/APITestCase và dùng
-unittest.mock.patch thay cho monkeypatch.
+This module used to be written in pytest style (bare functions plus the
+monkeypatch fixture), which `manage.py test` could not collect. It now uses
+unittest/APITestCase with unittest.mock.patch instead.
 """
 from unittest.mock import patch
 
@@ -19,12 +19,12 @@ User = get_user_model()
 
 
 class Auth0AuthenticationTests(APITestCase):
-    """ProfileView kết hợp với Auth0 authentication class"""
+    """ProfileView combined with the Auth0 authentication class"""
 
     def test_profile_view_authenticated(self):
         """
-        Giả lập authentication trả về user hợp lệ -> ProfileView phải trả 200
-        kèm email của user đó.
+        When authentication yields a valid user, ProfileView must return 200
+        along with that user's email.
         """
         user = User.objects.create_user(
             username="t_test", email="t_test@example.com", password="password"
@@ -44,7 +44,7 @@ class Auth0AuthenticationTests(APITestCase):
         self.assertEqual(response.data.get("email"), "t_test@example.com")
 
     def test_profile_view_invalid_token(self):
-        """Token hỏng -> AuthenticationFailed -> 401 (hoặc 403)"""
+        """A bad token raises AuthenticationFailed and yields 401 (or 403)"""
 
         def fake_auth_fail(self, request):
             raise AuthenticationFailed("invalid token")
@@ -58,7 +58,7 @@ class Auth0AuthenticationTests(APITestCase):
         self.assertIn(response.status_code, (401, 403))
 
     def test_profile_view_force_authenticate(self):
-        """force_authenticate -> endpoint trả đúng dữ liệu của user đang đăng nhập"""
+        """force_authenticate makes the endpoint return the signed-in user's data"""
         user = User.objects.create_user(
             username="force_user", email="force@example.com", password="password"
         )

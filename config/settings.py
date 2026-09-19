@@ -67,17 +67,15 @@ TEMPLATES = [
     },
 ]
 
-# ASGI application for Channels
-# Project chạy thuần ASGI (WebSocket chat cần Channels), không dùng WSGI.
+# ASGI application for Channels.
+# This project is ASGI-only (WebSocket chat needs Channels); there is no WSGI entry point.
 ASGI_APPLICATION = "config.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
 
-# ... (BASE_DIR của bạn ở trên này) ...
-
-# Kiểm tra xem có phải testing mode không (từ .env hoặc command line)
+# Detect test mode, either from .env or from the command line
 IS_TESTING = os.getenv("IS_TESTING", "False").lower() in ("true", "1", "t") or "test" in sys.argv
 
 if IS_TESTING:

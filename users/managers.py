@@ -1,5 +1,5 @@
 """
-Custom manager cho User model.
+Custom manager for the User model.
 """
 import re
 
@@ -8,19 +8,20 @@ from django.contrib.auth.models import UserManager as DjangoUserManager
 
 class UserManager(DjangoUserManager):
     """
-    Manager cho User model dùng email làm USERNAME_FIELD.
+    Manager for a User model that uses email as its USERNAME_FIELD.
 
-    User khai ``USERNAME_FIELD = "email"`` nhưng vẫn kế thừa field ``username``
-    (unique=True, NOT NULL) từ AbstractUser. Manager mặc định của Django lại bắt
-    buộc truyền ``username`` ở tham số đầu tiên, nên hai thứ vênh nhau.
+    User declares ``USERNAME_FIELD = "email"`` but still inherits the
+    ``username`` field (unique, NOT NULL) from AbstractUser, while Django's
+    default manager requires ``username`` as its first positional argument.
+    The two disagree.
 
-    Manager này lấp khoảng trống đó: cho phép gọi
-    ``User.objects.create_user(email=..., password=...)`` mà không cần username,
-    username sẽ được sinh tự động từ email hoặc số điện thoại và đảm bảo không trùng.
+    This manager bridges the gap: ``create_user(email=..., password=...)``
+    works without a username, which is instead derived from the email or
+    phone number and de-duplicated.
     """
 
     def _base_username(self, email=None, phone_number=None):
-        """Lấy phần gốc của username từ email hoặc số điện thoại."""
+        """Derive the username stem from an email or phone number."""
         if email:
             base = email.split("@")[0]
         elif phone_number:
@@ -28,12 +29,12 @@ class UserManager(DjangoUserManager):
         else:
             base = "user"
 
-        # username của AbstractUser chỉ cho phép: chữ, số và @ . + - _
+        # AbstractUser.username only allows letters, digits and @ . + - _
         base = re.sub(r"[^\w.@+-]", "", base).strip("._-")
         return base[:140] or "user"
 
     def generate_username(self, email=None, phone_number=None):
-        """Sinh username duy nhất, thêm hậu tố số nếu bị trùng."""
+        """Build a unique username, appending a numeric suffix on collision."""
         base = self._base_username(email, phone_number)
         candidate = base
         suffix = 1

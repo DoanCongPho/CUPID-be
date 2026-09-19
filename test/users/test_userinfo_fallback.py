@@ -1,9 +1,10 @@
 """
-Tests cho cơ chế fallback sang /userinfo của Auth0 khi JWT không mang claim email.
+Tests for the fallback to Auth0's /userinfo endpoint when a JWT carries no
+email claim.
 
-Trước đây file này viết theo kiểu pytest (hàm rời + fixture monkeypatch), nên
-`manage.py test` không chạy được. Đã chuyển sang unittest/APITestCase và dùng
-unittest.mock.patch thay cho monkeypatch.
+This module used to be written in pytest style (bare functions plus the
+monkeypatch fixture), which `manage.py test` could not collect. It now uses
+unittest/APITestCase with unittest.mock.patch instead.
 """
 from unittest.mock import patch
 
@@ -19,7 +20,7 @@ User = get_user_model()
 
 
 class FakeResponse:
-    """Response giả cho requests.get"""
+    """Stand-in response for requests.get"""
 
     def __init__(self, json_data, status_code=200):
         self._json = json_data
@@ -33,11 +34,11 @@ class FakeResponse:
             raise requests.HTTPError()
 
 
-# AUTH0_DOMAIN không được set khi chạy local nên fetch_userinfo sẽ vỡ ở
-# settings.AUTH0_DOMAIN.rstrip(...) — override để test chạy độc lập với .env
+# AUTH0_DOMAIN is unset locally, so fetch_userinfo would break on
+# settings.AUTH0_DOMAIN.rstrip(...); override it so the test does not depend on .env
 @override_settings(AUTH0_DOMAIN="test.auth0.com")
 class FetchUserinfoTests(APITestCase):
-    """Unit test cho hàm fetch_userinfo"""
+    """Unit tests for the fetch_userinfo helper"""
 
     def test_fetch_userinfo_returns_json(self):
         fake_userinfo = {
@@ -56,7 +57,7 @@ class FetchUserinfoTests(APITestCase):
 
 
 class UserinfoFallbackTests(APITestCase):
-    """Token thiếu claim email -> authenticate() phải gọi fetch_userinfo để lấy bù"""
+    """A token without an email claim makes authenticate() call fetch_userinfo"""
 
     def test_profile_view_with_missing_email_uses_userinfo(self):
         def fake_fetch_userinfo(access_token):
@@ -68,7 +69,7 @@ class UserinfoFallbackTests(APITestCase):
             }
 
         def fake_validate_token(self, token):
-            # payload cố tình thiếu "email" để kích hoạt nhánh fallback
+            # the payload deliberately omits "email" to trigger the fallback branch
             return {"sub": "auth0|fallback123", "name": "fallback"}
 
         client = APIClient()
@@ -81,5 +82,5 @@ class UserinfoFallbackTests(APITestCase):
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertEqual(data.get("email"), "fallback@example.com")
-        # username được tạo từ phần local của email trong logic authenticate()
+        # authenticate() derives the username from the local part of the email
         self.assertEqual(data.get("username"), "fallback")

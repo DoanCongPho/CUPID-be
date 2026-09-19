@@ -178,7 +178,7 @@ class ProfileSerializerTests(APITestCase):
         )
         profile = UserProfile.objects.update_or_create(user=user, defaults={"full_name": 'Full Name', "gender": 'F', "date_of_birth": '1995-01-01', "nickname": 'nick', "teaser_description": 'desc', "profile_photo_url": 'https://example.com/photo.jpg', "verification_video_url": 'https://example.com/video.mp4', "is_verified": False, "total_xp": 0, "is_matched": False, "home_latitude": 21.0285, "home_longitude": 105.8542})[0]
         
-        # Test này chỉ kiểm tra serializer nên không cần HTTP client
+        # this test only exercises the serializer, so no HTTP client is needed
         from users.serializers.profile import UserProfileSerializer
         serializer = UserProfileSerializer(profile)
         

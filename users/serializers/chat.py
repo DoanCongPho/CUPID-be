@@ -25,9 +25,9 @@ class ChatSerializer(serializers.ModelSerializer):
 
     def validate_match_id(self, value):
         """
-        Mỗi Match chỉ có đúng một Chat, và Chat đó đã được users/signals.py tạo
-        tự động ngay khi Match được tạo. Không chặn ở đây thì ràng buộc OneToOne
-        sẽ ném IntegrityError và API trả 500 thay vì 400.
+        A Match has exactly one Chat, created automatically by users/signals.py
+        as soon as the Match is created. Without this check the OneToOne
+        constraint raises IntegrityError and the API returns 500 instead of 400.
         """
         if Chat.objects.filter(match=value).exists():
             raise serializers.ValidationError(

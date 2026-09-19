@@ -51,14 +51,14 @@ class ChatListTests(APITestCase):
         self.assertEqual(len(response.data), 2)
 
     def test_list_chats_auto_created_for_matches(self):
-        """Mỗi Match được users/signals.py tạo sẵn một Chat, nên không bao giờ rỗng"""
+        """users/signals.py creates a Chat per Match, so the list is never empty"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         response = self.client.get(self.chat_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 2)
 
     def test_create_chat_rejected_when_already_exists(self):
-        """Chat đã được tạo tự động cùng Match -> tạo thêm phải bị từ chối bằng 400"""
+        """A Chat already exists for the Match, so creating another must return 400"""
         self.client.credentials(HTTP_AUTHORIZATION=f'Bearer {self.token}')
         data = {'match_id': self.match1.id}
         response = self.client.post(self.chat_url, data, format='json')
@@ -71,7 +71,7 @@ class ChatListTests(APITestCase):
         response = self.client.get(self.chat_url)
 
         self.assertIn('match', response.data[0])
-        # queryset sắp xếp theo -created_at nên không phụ thuộc thứ tự cụ thể
+        # the queryset is ordered by -created_at, so do not depend on a specific order
         match_ids = {row['match']['id'] for row in response.data}
         self.assertEqual(match_ids, {self.match1.id, self.match2.id})
 

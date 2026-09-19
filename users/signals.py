@@ -6,8 +6,8 @@ from .models import UserProfile, UserModeSettings, Match, Chat
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_or_update_user_related_objects(sender, instance, created, **kwargs):
     """
-    Tự động tạo UserProfile và UserModeSettings khi User mới được tạo.
-    Dùng get_or_create để tránh lỗi Duplicate nếu signal chạy 2 lần.
+    Create UserProfile and UserModeSettings automatically for every new User.
+    Uses get_or_create so a duplicate signal delivery cannot raise.
     """
 
     UserProfile.objects.get_or_create(user=instance)

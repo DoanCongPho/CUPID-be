@@ -2,7 +2,7 @@ import json
 import math
 
 def haversine(lat1, lon1, lat2, lon2):
-    # Tính khoảng cách giữa 2 điểm lat/long (km)
+    # Great-circle distance between two lat/long points, in km
     R = 6371
     phi1, phi2 = math.radians(lat1), math.radians(lat2)
     dphi = math.radians(lat2 - lat1)
@@ -18,16 +18,16 @@ def format_time(m):
     return f"{m//60:02d}:{m%60:02d}"
 
 def find_common_free_slot(constraints1, constraints2, min_duration=120):
-    # Tìm khung giờ rảnh chung >= min_duration phút từ 07:00 đến 22:00
+    # Find a shared free window of at least min_duration minutes between 07:00 and 22:00
     busy1 = [(parse_time(s), parse_time(e)) for s, e in constraints1]
     busy2 = [(parse_time(s), parse_time(e)) for s, e in constraints2]
     start, end = parse_time("07:00"), parse_time("22:00")
-    # Tạo mảng đánh dấu bận
+    # mark every busy minute
     slots = [0] * (end - start)
     for s, e in busy1 + busy2:
         for i in range(max(s, start), min(e, end)):
             slots[i - start] = 1
-    # Tìm đoạn liên tục rảnh đủ dài
+    # scan for a long enough run of free minutes
     length = 0
     for i in range(len(slots)):
         if slots[i] == 0:
@@ -41,7 +41,7 @@ def find_common_free_slot(constraints1, constraints2, min_duration=120):
     return None, None
 
 def get_top3_places(user1, user2, places):
-    # Trả về 3 địa điểm có tổng khoảng cách nhỏ nhất
+    # Return the 3 places with the smallest combined travel distance
     res = []
     for p in places:
         d1 = haversine(user1['latitude'], user1['longitude'], p['latitude'], p['longitude'])
@@ -79,7 +79,7 @@ def gen_quests_for_matches(matches, user_profiles, tasks, places):
         user2 = {'latitude': p2.home_latitude, 'longitude': p2.home_longitude}
         c1 = tasks.get(u1, [])
         c2 = tasks.get(u2, [])
-        # Nếu 1 trong 2 không có task (rảnh nguyên ngày), coi như constraints rỗng
+        # no tasks means free all day, so the constraint list stays empty
         if not c1:
             c1 = []
         if not c2:
@@ -165,23 +165,23 @@ if __name__ == "__main__":
                 "distance_km": round(total, 2)
             })
 
-    # Group by couple, lấy 3 địa điểm/cặp
+    # group by couple, keeping 3 places each
     from collections import defaultdict
     final = defaultdict(list)
     for r in results:
         key = (r['user1']['id'], r['user2']['id'])
         final[key].append(r)
 
-    # Xuất kết quả
+    # print the result
     for (u1, u2), lst in final.items():
-        print(f"\nCặp: {users[u1]['name']} - {users[u2]['name']}")
+        print(f"\nCouple: {users[u1]['name']} - {users[u2]['name']}")
         for i, r in enumerate(lst):
-            print(f"  Địa điểm {i+1}: {r['place_name']} ({r['location_latitude']}, {r['location_longitude']})")
-            print(f"    Thời gian: {r['time_start']} - {r['time_end']}")
+            print(f"  Place {i+1}: {r['place_name']} ({r['location_latitude']}, {r['location_longitude']})")
+            print(f"    Time: {r['time_start']} - {r['time_end']}")
             print(f"    Hint 1: {r['user1']['hint']}")
             print(f"    Hint 2: {r['user2']['hint']}")
-            print(f"    XP: {r['xp_reward']} (Tổng khoảng cách: {r['distance_km']} km)")
+            print(f"    XP: {r['xp_reward']} (total distance: {r['distance_km']} km)")
 
-    # Nếu muốn lưu ra file JSON:
+    # persist the result as JSON
     with open('cupid_results_new.json', 'w', encoding='utf-8') as f:
         json.dump(list(final.values()), f, ensure_ascii=False, indent=2)
